@@ -951,6 +951,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
         <button class="bt bt-outline bt-sm" onclick="reconectarDrive()">🔄 Reconectar</button>
         <button class="bt bt-outline bt-sm" onclick="criarEstruturaDrive()">📁 Criar Pastas</button>
       </div>
+      <div id="cfg-drive-msg" style="margin-top:10px;font-size:12px;line-height:1.5"></div>
     </div>
   </div>
   <div class="g2">
@@ -1426,8 +1427,10 @@ async function criarEstruturaDrive(){
     if(msg)msg.innerHTML=`<span style="color:var(--gr2)">✓ Estrutura criada! ID da pasta raiz: <strong>${rootId}</strong><br>Cole este ID no campo "ID da Pasta Raiz" acima e salve.</span>`;
     notify('Pastas criadas no Drive!');
   }catch(e){
-    if(msg)msg.innerHTML=`<span style="color:var(--re2)">Erro: ${e.message}</span>`;
-    notify('Erro ao criar pastas','er');
+    const errMsg = e.message||'Erro desconhecido';
+    if(msg)msg.innerHTML=`<span style="color:var(--re2)">❌ Erro: ${errMsg}</span>`;
+    notify('Erro: '+errMsg.slice(0,80),'er');
+    console.error('Criar pastas erro:',e);
   }
 }
 
