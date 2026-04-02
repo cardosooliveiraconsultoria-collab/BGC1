@@ -636,6 +636,14 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 
 @media(max-width:1100px){.g5{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:900px){.g2,.g21,.g3{grid-template-columns:1fr;}}
+
+/* Notificações */
+.nfy{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;
+  z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.nfy.sh{opacity:1;}
+.nfy.sc{background:#10b981;color:#fff;}
+.nfy.er{background:#ef4444;color:#fff;}
 </style>
 </head>
 <body>
@@ -797,12 +805,12 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="metric-card"><div class="mc-icon">🤝</div><div class="mc-label">Parcerias</div><div class="mc-val" id="kp-parc">0</div><div class="mc-sub">Ativas</div><div class="mc-line"></div></div>
   </div>
   <div class="g21">
-    <div class="card"><div class="card-title">Funil de Processos</div><div id="l-funil"></div></div>
-    <div class="card"><div class="card-title">Alertas Documentais</div><div id="l-alerts"></div></div>
+    <div class="card"><div class="card-title">Funil de Processos</div><div id="d-funil"></div></div>
+    <div class="card"><div class="card-title">Alertas Documentais</div><div id="d-alerts"></div></div>
   </div>
   <div class="g2">
-    <div class="card"><div class="card-title">Últimas Interações</div><div id="l-ints"><div class="em"><div class="em-ic">📞</div><div class="em-t">Nenhuma interação</div></div></div></div>
-    <div class="card"><div class="card-title">Performance por Município</div><div id="l-perf"><div class="em"><div class="em-ic">🏛</div><div class="em-t">Nenhum contrato ativo</div></div></div></div>
+    <div class="card"><div class="card-title">Últimas Interações</div><div id="d-ints"><div class="em"><div class="em-ic">📞</div><div class="em-t">Nenhuma interação</div></div></div></div>
+    <div class="card"><div class="card-title">Performance por Município</div><div id="d-perf"><div class="em"><div class="em-ic">🏛</div><div class="em-t">Nenhum contrato ativo</div></div></div></div>
   </div>
 </div>
 
@@ -821,7 +829,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="ph-left"><div class="ph-gold">Comercial</div><div class="ph-title">Parcerias</div></div>
     <div class="ph-right"><button class="bt bt-gold bt-sm" onclick="omParc()">+ Nova Parceria</button></div>
   </div>
-  <div id="l-parc"></div>
+  <div id="t-parc"></div>
 </div>
 
 <!-- ══ EMPRESAS ══ -->
@@ -863,7 +871,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="ph-left"><div class="ph-gold">Licitações</div><div class="ph-title">Processos</div><div class="ph-sub">Pipeline completo de credenciamentos</div></div>
     <div class="ph-right"><button class="bt bt-gold bt-sm" onclick="omProc()">+ Novo</button></div>
   </div>
-  <div id="l-proc"><div class="em"><div class="em-ic">📋</div><div class="em-t">Nenhum processo</div></div></div>
+  <div id="t-proc"></div>
 </div>
 
 <!-- ══ DOCUMENTOS ══ -->
@@ -872,19 +880,44 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="ph-left"><div class="ph-gold">Habilitação</div><div class="ph-title">Documentos</div></div>
     <div class="ph-right"><button class="bt bt-gold bt-sm" onclick="omDoc()">+ Novo</button></div>
   </div>
-  <div id="l-docs"></div>
+  <div id="t-docs"></div>
 </div>
 
 <!-- ══ FATURAMENTO ══ -->
 <div class="vw" id="vw-faturamento">
   <div class="ph"><div class="ph-left"><div class="ph-gold">Financeiro</div><div class="ph-title">Faturamento</div></div></div>
-  <div id="l-fat"></div>
+  <div style="padding:0 8px">
+    <div class="fr" style="gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select class="fi" id="f-ano-fat" style="max-width:120px" onchange="rFat()">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+      <select class="fi" id="f-emp-fat" style="max-width:220px" onchange="rFat()"><option value="">Todas as empresas</option></select>
+    </div>
+    <div id="fat-ct"></div>
+  </div>
 </div>
 
 <!-- ══ RELATÓRIOS ══ -->
 <div class="vw" id="vw-relatorios">
   <div class="ph"><div class="ph-left"><div class="ph-gold">Análises</div><div class="ph-title">Relatórios</div></div></div>
-  <div id="l-rel"></div>
+  <div style="padding:0 8px">
+    <div class="fr" style="gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select class="fi" id="rel-emp" style="max-width:250px"><option value="">Todas as empresas</option></select>
+      <select class="fi" id="rel-per" style="max-width:160px">
+        <option value="mes">Mês atual</option>
+        <option value="trim">Trimestre</option>
+        <option value="sem">Semestre</option>
+        <option value="ano" selected>Ano</option>
+      </select>
+      <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('sintetico')">📊 Sintético</button>
+      <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('analitico')">📋 Analítico</button>
+      <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('contratos')">📄 Contratos</button>
+      <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('parcerias')">🤝 Parcerias</button>
+    </div>
+    <div id="rel-ct"></div>
+  </div>
 </div>
 
 <!-- ══ CONFIGURAÇÕES ══ -->
@@ -1480,6 +1513,13 @@ function iniciarApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('sb-user').textContent=CU?.nome||'Usuário';
+  // Garantir seed e recarregar dados frescos do localStorage
+  if(emps.length < 7 && _SEED_EMPS.length === 7){
+    localStorage.setItem('bgc_emps', JSON.stringify(_SEED_EMPS));
+    localStorage.setItem('bgc_docs', JSON.stringify(_SEED_DOCS));
+  }
+  emps = ld(K.emps); docs = ld(K.docs);
+  proc = ld(K.proc); munis = ld(K.munis);
   aplicarVisual();initPortais();rDash();updBadges();
   // Tenta Drive imediatamente, depois em 1s, 3s e 6s (aguarda GSI carregar)
   [500,1500,3500,6000].forEach(t=>setTimeout(()=>{
@@ -1509,7 +1549,9 @@ function salvarVisual(){vis.cor1=gv('cfg-cor1');vis.cor2=gv('cfg-cor2');vis.nome
 // ══════════════════════════════════════════════
 const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Processos & Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Documentos <small>Por cliente · Upload Drive</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>'};
 const ACTIONS={processos:`<button class="bt bt-p bt-sm" onclick="omProc()">+ Novo Processo</button>`,documentos:`<button class="bt bt-outline bt-sm" onclick="gerarTodasBases()">⊕ Bases</button><button class="bt bt-p bt-sm" onclick="omDoc()">+ Novo Documento</button>`,municipios:`<button class="bt bt-p bt-sm" onclick="omMuni()">+ Novo Município</button><button class="bt bt-g bt-sm" onclick="exportMuniCSV()">⬇ CSV</button>`,parcerias:`<button class="bt bt-p bt-sm" onclick="omParc()">+ Nova Parceria</button>`,empresas:`<button class="bt bt-p bt-sm" onclick="omEmp()">+ Nova Empresa</button>`,faturamento:`<button class="bt bt-g bt-sm" onclick="exportFatCSV()">⬇ CSV</button>`,dashboard:'',portais:'',relatorios:'',config:'',proposta:''};
-function go(v,el){/* v7 */
+function go(v,el){
+  // Recarregar dados frescos ao navegar
+  emps=ld(K.emps);docs=ld(K.docs);proc=ld(K.proc);munis=ld(K.munis);parc=ld(K.parc);/* v7 */
   
   document.querySelectorAll('.vw').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
@@ -3288,6 +3330,7 @@ function novaProposta() {
 }
 </script>
 <!-- Modal container (dynamic) -->
+<div id="nfy" class="nfy"></div>
 <div id="mct"></div>
 </body>
 </html>
