@@ -902,6 +902,14 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
       <button class="ls-btn" onclick="cadastro()">Criar Conta</button>
     </div>
 
+    <!-- Acesso rápido master -->
+    <div style="margin-top:18px;padding:10px 14px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;font-size:11px;color:var(--t3);line-height:1.8;">
+      <strong style="color:var(--g2)">Acesso direto BGC:</strong><br>
+      E-mail: <code style="color:var(--t1)">bgc@consultoria.com</code><br>
+      Senha: <code style="color:var(--t1)">bgc2026</code>
+      <button class="ls-btn" style="margin-top:10px;padding:8px;font-size:11px;letter-spacing:1px;" onclick="document.getElementById('li-email').value='bgc@consultoria.com';document.getElementById('li-senha').value='bgc2026';ltab('in');login();">⚡ Entrar agora</button>
+    </div>
+
     <div class="ls-footer">Plataforma Inteligente de Gestão Comercial & Licitações</div>
   </div>
 
@@ -1718,11 +1726,27 @@ function login(){
 function cadastro(){
   const nome=gv('ca-nome'),email=gv('ca-email'),senha=gv('ca-senha');
   if(!nome||!email||!senha||senha.length<6){showErr('ca-err','Preencha todos os campos (senha mín. 6 caracteres)');return;}
-  const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
-  if(users.find(u=>u.email===email)){showErr('ca-err','E-mail já cadastrado');return;}
-  const u={id:uid(),nome,email,senha:btoa(senha)};
-  users.push(u);localStorage.setItem('bgc_users',JSON.stringify(users));
-  CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();
+  try{
+    const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
+    if(users.find(u=>u.email===email)){showErr('ca-err','E-mail já cadastrado');return;}
+    const u={id:uid(),nome,email,senha:btoa(senha)};
+    users.push(u);localStorage.setItem('bgc_users',JSON.stringify(users));
+    CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();
+  }catch(e){showErr('ca-err','Erro ao criar conta: '+e.message);}
+}
+function login(){
+  const email=gv('li-email'),senha=gv('li-senha');
+  // Acesso master BGC (sempre funciona)
+  if(email==='bgc@consultoria.com'&&senha==='bgc2026'){
+    const u={id:'master',nome:'Bruno Gabriel Cardoso',email,role:'admin'};
+    CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();return;
+  }
+  try{
+    const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
+    const u=users.find(x=>x.email===email&&x.senha===btoa(senha));
+    if(!u){showErr('li-err','E-mail ou senha incorretos');return;}
+    CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();
+  }catch(e){showErr('li-err','Erro ao fazer login: '+e.message);}
 }
 function logout(){CU=null;localStorage.removeItem('bgc_sess');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
 function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}}
