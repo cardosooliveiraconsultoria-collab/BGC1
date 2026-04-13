@@ -26,10 +26,19 @@
   --teal:#14b8a6;
   --r:10px; --r2:7px;
   --shadow:0 8px 30px rgba(0,0,0,.5);
+  --shadow2:0 4px 16px rgba(0,0,0,.35);
   --ff:'Nunito Sans',system-ui,sans-serif;
   --fd:'Cinzel',serif;
   --fm:'JetBrains Mono',monospace;
   --sbw:210px;
+  /* ── cores semânticas ausentes ── */
+  --go2:#d97706; --gol:rgba(217,119,6,.12);
+  --gr2:#16a34a; --grl:rgba(22,163,74,.12);
+  --re2:#dc2626;
+  --a2:#3b82f6;  --ac:#60a5fa; --al:rgba(59,130,246,.12);
+  --te:#14b8a6;
+  --c2:#0d1e35;  --c3:#112542;
+  --ca:#f59e0b;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -541,6 +550,149 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 .em-ic{font-size:40px;margin-bottom:12px;opacity:.2;}
 .em-t{font-family:var(--fd);font-size:15px;color:var(--t3);font-weight:600;letter-spacing:.5px;}
 .em-s{font-size:12px;color:var(--t4);margin-top:5px;}
+
+/* ══ MODAL DINÂMICO (mct) — classes usadas no JS ══ */
+/* corpo do modal */
+.mb{background:var(--n3);border:1px solid var(--bd);border-radius:14px;padding:26px;width:90%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.7);}
+.mb.lg{max-width:760px;}
+/* cabeçalho do modal */
+.mt{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:13px;border-bottom:1px solid var(--bd);font-family:var(--fd);font-size:17px;font-weight:700;color:var(--t1);letter-spacing:.4px;}
+/* footer do modal */
+.mf{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid var(--bd);}
+/* botão fechar modal */
+.mx{width:26px;height:26px;border-radius:6px;border:1px solid var(--bd);background:var(--bd2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;flex-shrink:0;}
+.mx:hover{background:var(--redl);color:var(--red);}
+
+/* ══ FORM ELEMENTOS INTERNOS ══ */
+/* select dentro de modal */
+.fs{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r2);color:var(--wh);padding:9px 13px;font-size:13px;font-family:var(--ff);transition:border-color .15s;width:100%;outline:none;cursor:pointer;}
+.fs:focus{border-color:rgba(201,168,76,.5);background:rgba(255,255,255,.07);}
+.fs option{background:var(--n2);}
+/* textarea */
+.fta{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r2);color:var(--wh);padding:9px 13px;font-size:13px;font-family:var(--ff);width:100%;outline:none;resize:vertical;min-height:76px;line-height:1.55;transition:border-color .15s;}
+.fta:focus{border-color:rgba(201,168,76,.5);background:rgba(255,255,255,.07);}
+/* flex row full-width */
+.f1{display:flex;gap:11px;}
+.f1 .fg{flex:1;margin-bottom:0;}
+/* flex row 3 cols */
+.f3{display:flex;gap:11px;}
+.f3 .fg{flex:1;margin-bottom:0;}
+
+/* ══ BOTÕES VARIANTES (abreviados no JS) ══ */
+.bt-g{background:var(--n5);color:var(--t1);border:1px solid var(--bd);}
+.bt-g:hover{background:var(--n6);border-color:var(--gc);}
+.bt-p{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--n1);box-shadow:0 3px 14px rgba(201,168,76,.28);}
+.bt-p:hover{box-shadow:0 5px 22px rgba(201,168,76,.45);transform:translateY(-1px);}
+.bt-d{background:var(--redl);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.bt-d:hover{background:rgba(239,68,68,.25);}
+.bt-c{background:var(--bluel);border:1px solid rgba(59,130,246,.2);color:var(--blue);}
+.bt-c:hover{background:rgba(59,130,246,.25);}
+.bt-drive{background:rgba(26,115,232,.15);border:1px solid rgba(26,115,232,.3);color:#4a90e2;}
+.bt-drive:hover{background:rgba(26,115,232,.25);}
+
+/* ══ PHASE LABEL (pills usadas nas tabelas) ══ */
+.pl{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
+.pl-a{background:var(--bluel);color:var(--blue);}
+.pl-m{background:rgba(124,58,237,.12);color:#a78bfa;}
+.pl-e{background:rgba(234,88,12,.12);color:#fb923c;}
+.pl-ag{background:var(--amberl);color:var(--amber);}
+.pl-r{background:var(--greenl);color:var(--green);}
+.pl-ca{background:rgba(5,150,105,.12);color:#34d399;}
+.pl-as{background:var(--amberl);color:var(--amber);}
+.pl-dv{background:var(--redl);color:var(--red);}
+.pl-x{background:var(--bd2);color:var(--t3);}
+.pl-at{background:var(--greenl);color:var(--green);}
+.pl-aq{background:var(--bd2);color:var(--t3);}
+
+/* ══ HISTÓRICO DE INTERAÇÕES ══ */
+.hi{padding:10px 0;border-bottom:1px solid var(--bd2);}
+.hi:last-child{border-bottom:none;}
+
+/* ══ CARDS INDICADORES (relatório) ══ */
+.ib{background:var(--n3);border:1px solid var(--bd);border-radius:var(--r);padding:16px 18px;}
+.iv{font-family:var(--fm);font-size:24px;font-weight:800;color:var(--g2);line-height:1;}
+.il{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;font-weight:700;}
+
+/* ══ CARD / CONTAINER GENÉRICO ══ */
+.cd{background:var(--n3);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;}
+
+/* ══ FILE UPLOAD ══ */
+.file-done{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--grl);border:1px solid rgba(22,163,74,.25);border-radius:var(--r2);font-size:12px;color:var(--gr2);}
+
+/* ══ CURVA ABC PILL ══ */
+.cp{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;letter-spacing:.5px;}
+.cA{background:rgba(34,197,94,.15);color:#22c55e;}
+.cB{background:rgba(59,130,246,.15);color:#3b82f6;}
+.cC{background:var(--bd2);color:var(--t3);}
+
+/* ══ MUNICÍPIO ITEM (lista) ══ */
+.mi{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd2);cursor:pointer;transition:.12s;}
+.mi:hover{background:var(--sbh);}
+.mi.sl{background:var(--ga);border-left:3px solid var(--g1);}
+
+/* ══ FUNIL DE PROCESSOS ══ */
+.fn{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd2);}
+.fn:last-child{border-bottom:none;}
+.fl{font-size:11.5px;color:var(--t2);width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fw{flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:5px;overflow:hidden;}
+.fb{height:5px;border-radius:99px;transition:width .7s ease;}
+.fn2{font-family:var(--fm);font-size:11.5px;font-weight:700;color:var(--t2);width:22px;text-align:right;}
+
+/* ══ ALERTAS DOCUMENTOS ══ */
+.al{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r2);margin-bottom:5px;font-size:12px;border:1px solid var(--bd);}
+.al.cr{background:var(--redl);border-color:rgba(239,68,68,.2);}
+.al.wn{background:var(--amberl);border-color:rgba(245,158,11,.2);}
+.al.ok{background:var(--greenl);border-color:rgba(34,197,94,.2);}
+.al-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:currentColor;}
+.al-i{flex:1;}
+.al-e{font-weight:600;color:var(--t1);}
+.al-d{font-size:10.5px;color:var(--t3);}
+.al-ds{font-family:var(--fm);font-size:11px;font-weight:700;white-space:nowrap;}
+
+/* ══ UPLOAD / DROPZONE ══ */
+.uz{border:2px dashed var(--bd);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:10px;}
+.uz:hover,.uz.drag{border-color:var(--gc);background:var(--gb);}
+.uz-ic{font-size:28px;margin-bottom:6px;opacity:.5;}
+.uz-t{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:4px;}
+.uz-s{font-size:11px;color:var(--t4);}
+.upload-prog{display:none;margin-bottom:10px;}
+.upload-prog.on{display:block;}
+.prog-bar{height:5px;background:var(--bd2);border-radius:99px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--g1),var(--g2));transition:width .3s;}
+
+/* ══ PROPOSTA — seções ══ */
+.ch{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bd);background:var(--n3);}
+.ct2{font-family:var(--fd);font-size:14px;font-weight:600;color:var(--t1);letter-spacing:.4px;}
+.cs{font-size:11px;color:var(--t3);margin-top:3px;}
+
+/* ══ FATURAMENTO INPUT ══ */
+.fat-inp{background:transparent;border:none;border-bottom:1px solid var(--bd);color:var(--t1);font-size:11.5px;font-family:var(--fm);width:80px;padding:3px 4px;outline:none;text-align:right;}
+.fat-inp:focus{border-bottom-color:var(--g1);}
+
+/* ══ RADIO-TOGGLE (rtg) ══ */
+.rtg{display:flex;gap:6px;flex-wrap:wrap;}
+.rtg-op{padding:7px 14px;border-radius:var(--r2);border:1px solid var(--bd);font-size:12px;cursor:pointer;color:var(--t3);transition:.15s;}
+.rtg-op:hover{border-color:var(--gc);color:var(--g2);}
+.rtg-op.on{background:var(--ga);border-color:var(--gc);color:var(--g2);font-weight:700;}
+
+/* ══ CONTRATO — artigo ══ */
+.art{font-size:12px;line-height:1.8;color:var(--t2);padding:10px 0;border-bottom:1px solid var(--bd2);}
+.art:last-child{border-bottom:none;}
+.art strong{color:var(--t1);}
+
+/* ══ ASSINATURA (contrato) ══ */
+.bl{flex:1;text-align:center;font-size:11px;color:var(--t3);border-top:1px solid var(--bd);padding-top:8px;line-height:1.6;}
+.sign{display:flex;gap:30px;margin-top:40px;padding-top:10px;}
+
+/* ══ PNCP BADGE ══ */
+.pncp-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:9.5px;font-weight:700;background:var(--bluel);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+
+/* ══ XL / EXPORT ══ */
+.xl{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r2);background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);color:var(--green);font-size:11.5px;font-weight:700;cursor:pointer;transition:.15s;}
+.xl:hover{background:rgba(34,197,94,.2);}
+
+/* ══ BTN SIZE sm ══ */
+.bt-s{padding:5px 10px;font-size:11px;border-radius:6px;}
 
 /* ══════════════
    BGC.AI
