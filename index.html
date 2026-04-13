@@ -481,6 +481,65 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 }
 .mo-close:hover{background:var(--redl);color:var(--red);}
 
+/* ══ MODAL DINÂMICO — classes usadas pelo JS ══ */
+/* .mb = modal body/card, .mt = modal title bar, .mf = modal footer, .mx = botão fechar */
+.mb{background:var(--n3);border:1px solid var(--bd);border-radius:14px;padding:28px;width:90%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.7);}
+.mb.lg{max-width:780px;}
+.mb::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--g1),transparent);margin:-28px -28px 22px;border-radius:14px 14px 0 0;}
+.mb::-webkit-scrollbar{width:3px;}
+.mb::-webkit-scrollbar-thumb{background:var(--n5);}
+.mt{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bd);font-family:var(--fd);font-size:17px;font-weight:700;color:var(--t1);letter-spacing:.4px;}
+.mf{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--bd);}
+.mx{width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);background:var(--bd2);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;flex-shrink:0;}
+.mx:hover{background:var(--redl);color:var(--red);}
+
+/* Formulário modal */
+.fs{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r2);color:var(--wh);padding:9px 13px;font-size:13px;font-family:var(--ff);transition:border-color .15s;width:100%;outline:none;cursor:pointer;}
+.fs:focus{border-color:rgba(201,168,76,.5);background:rgba(255,255,255,.07);}
+.fs option{background:var(--n2);}
+.fta{background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r2);color:var(--wh);padding:9px 13px;font-size:13px;font-family:var(--ff);width:100%;outline:none;resize:vertical;min-height:76px;line-height:1.55;transition:border-color .15s;}
+.fta:focus{border-color:rgba(201,168,76,.5);background:rgba(255,255,255,.07);}
+.f1{grid-column:1/-1;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+
+/* Botões de ação nos modais */
+.bt-g{background:var(--n5);color:var(--t1);border:1px solid var(--bd);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 17px;border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap;}
+.bt-g:hover{background:var(--n6);border-color:var(--gc);}
+.bt-p{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--n1);border:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 17px;border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap;box-shadow:0 3px 14px rgba(201,168,76,.28);}
+.bt-p:hover{box-shadow:0 5px 22px rgba(201,168,76,.45);transform:translateY(-1px);}
+.bt-d{background:var(--redl);color:var(--red);border:1px solid rgba(239,68,68,.2);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 17px;border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap;}
+.bt-d:hover{background:rgba(239,68,68,.25);border-color:rgba(239,68,68,.4);}
+.bt-c{background:var(--bluel);color:var(--blue);border:1px solid rgba(59,130,246,.2);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 17px;border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap;}
+.bt-c:hover{background:rgba(59,130,246,.25);}
+.bt-drive{background:rgba(255,255,255,.06);color:var(--t2);border:1px solid var(--bd);display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 17px;border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--ff);transition:all .15s;white-space:nowrap;}
+.bt-drive:hover{border-color:var(--gc);color:var(--g2);}
+
+/* Pill de fase/status nos modais */
+.pl{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;}
+.pl-a{background:var(--bluel);color:var(--blue);}
+.pl-m{background:rgba(124,58,237,.12);color:#a78bfa;}
+.pl-e{background:rgba(234,88,12,.12);color:#fb923c;}
+.pl-ag{background:var(--amberl);color:var(--amber);}
+.pl-r{background:var(--greenl);color:var(--green);}
+.pl-ca{background:rgba(5,150,105,.12);color:#34d399;}
+.pl-as{background:var(--amberl);color:var(--amber);}
+.pl-dv{background:var(--redl);color:var(--red);}
+.pl-x{background:var(--bd2);color:var(--t3);}
+.pl-at{background:var(--greenl);color:var(--green);}
+.pl-aq{background:var(--bd2);color:var(--t3);}
+
+/* Histórico de interações */
+.hi{padding:10px 0;border-bottom:1px solid var(--bd2);}
+.hi:last-child{border-bottom:none;}
+
+/* Blocos de info/card compacto */
+.ib{background:var(--c2);border:1px solid var(--bd);border-radius:var(--r2);padding:14px 16px;}
+.iv{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);margin-top:4px;}
+.il{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--t3);font-weight:700;}
+
+/* Card/container compacto */
+.cd{background:var(--c2);border:1px solid var(--bd);border-radius:var(--r);padding:20px;}
+
 /* ══ BADGES ══ */
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;}
 .badge-gold{background:var(--ga);color:var(--g2);border:1px solid var(--gc);}
