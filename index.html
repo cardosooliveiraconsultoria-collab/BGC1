@@ -649,7 +649,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 <body>
 
 <!-- ══ LOGIN ══ -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="ls-left">
     <div class="ls-logo">
       <div class="ls-bgc">BGC</div>
@@ -2289,9 +2289,10 @@ function importarDados(input){const r=new FileReader();r.onload=e=>{try{const d=
 // INIT
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  const sess=localStorage.getItem('bgc_sess');
-  if(sess){try{CU=JSON.parse(sess);iniciarApp();}catch{document.getElementById('login-screen').style.display='flex';}}
-  else document.getElementById('login-screen').style.display='flex';
+  // Acesso direto sem login
+  CU={id:'admin-bgc-001',nome:'BGC Consultoria',email:'bgc@consultoria.com'};
+  localStorage.setItem('bgc_sess',JSON.stringify(CU));
+  iniciarApp();
   // Aguardar Google API
   window.addEventListener('load',()=>{
     [1000,3000,6000].forEach(t=>setTimeout(()=>{
