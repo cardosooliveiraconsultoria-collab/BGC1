@@ -1504,8 +1504,8 @@ function tipoCateg(tipo){
 // AUTH
 // ══════════════════════════════════════════════
 let CU=null;
-function showLogin(){document.getElementById('login-screen').style.display='flex';document.getElementById('cad-screen')||{style:{}}.style.display='none';}
-function showCad(){document.getElementById('login-screen').style.display='none';document.getElementById('cad-screen')||{style:{}}.style.display='flex';}
+function showLogin(){}
+function showCad(){}
 function login(){
   const email=gv('li-email'),senha=gv('li-senha');
   const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
@@ -1553,7 +1553,7 @@ function aplicarVisual(){
   if(vis.logo){const i=document.getElementById('sb-logo');if(i){i.src=vis.logo;i.style.display='block';}}
   if(vis.nomeEmp){const n=document.getElementById('sb-nome');if(n)n.innerHTML=vis.nomeEmp;}
 }
-function uploadLogo(inp){const r=new FileReader();r.onload=e=>{vis.logo=e.target.result;sv(K.vis,vis);const i=document.getElementById('sb-logo');i.src=vis.logo;i.style.display='block';document.getElementById('prev-logo')||{src:'',style:{}}.src=vis.logo;document.getElementById('prev-logo')||{src:'',style:{}}.style.display='block';};r.readAsDataURL(inp.files[0]);}
+function uploadLogo(inp){const r=new FileReader();r.onload=e=>{vis.logo=e.target.result;sv(K.vis,vis);const i=document.getElementById('sb-logo');i.src=vis.logo;i.style.display='block';(document.getElementById('prev-logo')||{src:'',style:{}}).src=vis.logo;(document.getElementById('prev-logo')||{src:'',style:{}}).style.display='block';};r.readAsDataURL(inp.files[0]);}
 function uploadBg(inp){const r=new FileReader();r.onload=e=>{vis.bgImg=e.target.result;sv(K.vis,vis);document.documentElement.style.setProperty('--bg-img',`url(${vis.bgImg})`);document.documentElement.style.setProperty('--bg-op','0.08');};r.readAsDataURL(inp.files[0]);}
 function removerBg(){delete vis.bgImg;sv(K.vis,vis);document.documentElement.style.setProperty('--bg-img','none');document.documentElement.style.setProperty('--bg-op','0');}
 function setTema(t){vis.tema=t;sv(K.vis,vis);notify('Tema: '+t);}
@@ -1573,7 +1573,7 @@ function go(v,el){
   document.getElementById('vw-'+v)?.classList.add('on');
   if(el)el.classList.add('on');
   document.getElementById('pg-title').innerHTML=TITLES[v]||v;
-  document.getElementById('tb-act')||{className:''}.innerHTML=ACTIONS[v]||'';
+  (document.getElementById('tb-act')||{className:''}).innerHTML=ACTIONS[v]||'';
   ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg})[v]?.();
   updBadges();
 }
@@ -1944,7 +1944,7 @@ function selM(id){
   selMuni=id;const m=munis.find(x=>x.id===id);if(!m)return;
   const nP=proc.filter(p=>p.municipio===id).length,nA=proc.filter(p=>p.municipio===id&&p.fase==='Contrato Ativo').length;
   const hist=(m.hist||[]).sort((a,b)=>new Date(b.dat)-new Date(a.dat));
-  document.getElementById('muni-det')||{innerHTML:''}.innerHTML=`
+  (document.getElementById('muni-det')||{innerHTML:''}).innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--bd)">
       <div class="av" style="width:40px;height:40px;border-radius:10px;background:${acor(m.nome)};font-size:13px">${ini(m.nome)}</div>
       <div style="flex:1"><div style="font-family:Syne,sans-serif;font-size:16px;font-weight:700">${m.nome} – ${m.uf}</div><div style="font-size:11px;color:var(--t2)">${nP} processo(s) · ${nA} ativo(s)</div></div>
@@ -1973,7 +1973,7 @@ function omMuni(id){
   else{sv2('mn-uf','SP');sv2('mn-cur','B');}
 }
 function salvarMuni(){const id=gv('mn-id')||uid();const ex=munis.find(x=>x.id===id);const m={id,nome:gv('mn-nom'),uf:gv('mn-uf'),curva:gv('mn-cur'),partido:gv('mn-par'),orientacao:gv('mn-ori'),prefeito:gv('mn-pre'),secretario:gv('mn-sec'),agendadora:gv('mn-age'),reguladora:gv('mn-reg'),contato:gv('mn-con'),obs:gv('mn-obs'),hist:ex?ex.hist:[]};const idx=munis.findIndex(x=>x.id===id);if(idx>-1)munis[idx]=m;else munis.push(m);sv(K.munis,munis);cm('mo-muni');if(selMuni===id)selM(id);rMunis();rDash();notify('Município salvo!');}
-function delMuni(id){if(!confirm('Excluir?'))return;munis=munis.filter(x=>x.id!==id);sv(K.munis,munis);selMuni=null;document.getElementById('muni-det')||{innerHTML:''}.innerHTML=`<div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div></div>`;rMunis();rDash();}
+function delMuni(id){if(!confirm('Excluir?'))return;munis=munis.filter(x=>x.id!==id);sv(K.munis,munis);selMuni=null;(document.getElementById('muni-det')||{innerHTML:''}).innerHTML=`<div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div></div>`;rMunis();rDash();}
 function omInt(muniId){document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-int"><div class="mb"><div class="mt"><span>Registrar Interação</span><span class="mx" onclick="cm('mo-int')">✕</span></div><input type="hidden" id="in-mid" value="${muniId}"><div class="fr"><div class="fg"><label>Data</label><input class="fi" type="date" id="in-dat" value="${new Date().toISOString().split('T')[0]}"></div><div class="fg"><label>Tipo</label><select class="fs" id="in-tip"><option value="phone">📞 Ligação</option><option value="whats">💬 WhatsApp</option><option value="email">✉ E-mail</option><option value="visita">🚗 Visita</option><option value="reuniao">💻 Reunião</option></select></div></div><div class="fr f1"><div class="fg"><label>Com quem</label><input class="fi" id="in-com" placeholder="Nome, cargo..."></div></div><div class="fr f1"><div class="fg"><label>Resultado / Próximos Passos</label><textarea class="fta" id="in-obs"></textarea></div></div><div class="fr f1"><div class="fg"><label>Próximo Follow-up</label><input class="fi" type="date" id="in-fup"></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-int')">Cancelar</button><button class="bt bt-p" onclick="salvarInt()">💾 Registrar</button></div></div></div>`;}
 function salvarInt(){const muniId=gv('in-mid');const m=munis.find(x=>x.id===muniId);if(!m)return;if(!m.hist)m.hist=[];m.hist.push({id:uid(),dat:gv('in-dat'),tip:gv('in-tip'),com:gv('in-com'),obs:gv('in-obs'),fup:gv('in-fup')});sv(K.munis,munis);cm('mo-int');selM(muniId);rDash();notify('Interação registrada!');}
 function exportMuniCSV(){let csv='nome,uf,curva,prefeito,partido,orientacao,secretario,agendadora,reguladora,contato,obs\n';munis.forEach(m=>csv+=`"${m.nome||''}","${m.uf||''}","${m.curva||''}","${m.prefeito||''}","${m.partido||''}","${m.orientacao||''}","${m.secretario||''}","${m.agendadora||''}","${m.reguladora||''}","${m.contato||''}","${m.obs||''}"\n`);dlFile(csv,'municipios_bgc.csv','text/csv');}
