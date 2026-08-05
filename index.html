@@ -1716,13 +1716,6 @@ function tipoCateg(tipo){
 let CU=null;
 function showLogin(){document.getElementById('login-screen').style.display='flex';document.getElementById('cad-screen')||{style:{}}.style.display='none';}
 function showCad(){document.getElementById('login-screen').style.display='none';document.getElementById('cad-screen')||{style:{}}.style.display='flex';}
-function login(){
-  const email=gv('li-email'),senha=gv('li-senha');
-  const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
-  const u=users.find(x=>x.email===email&&x.senha===btoa(senha));
-  if(!u){showErr('li-err','E-mail ou senha incorretos');return;}
-  CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();
-}
 function cadastro(){
   const nome=gv('ca-nome'),email=gv('ca-email'),senha=gv('ca-senha');
   if(!nome||!email||!senha||senha.length<6){showErr('ca-err','Preencha todos os campos (senha mín. 6 caracteres)');return;}
