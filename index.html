@@ -1034,6 +1034,14 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="card"><div class="card-title">Últimas Interações</div><div id="d-ints"><div class="em"><div class="em-ic">📞</div><div class="em-t">Nenhuma interação</div></div></div></div>
     <div class="card"><div class="card-title">Performance por Município</div><div id="d-perf"><div class="em"><div class="em-ic">🏛</div><div class="em-t">Nenhum contrato ativo</div></div></div></div>
   </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">💰 Faturamento Ativado por Mês</div><div id="d-fatmes"></div></div>
+    <div class="card"><div class="card-title">📁 Documentos por Status</div><div id="d-docstatus"></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">🏆 Top Municípios por Valor</div><div id="d-topval"></div></div>
+    <div class="card"><div class="card-title">📞 Contatos do Mês por Tipo</div><div id="d-conttipo"></div></div>
+  </div>
 </div>
 
 <!-- ══ MUNICÍPIOS ══ -->
@@ -1912,6 +1920,47 @@ function rDash(){
   const perf=munis.map(m=>({...m,n:proc.filter(p=>p.municipio===m.id&&p.fase==='Contrato Ativo').length})).filter(m=>m.n>0).sort((a,b)=>b.n-a.n).slice(0,6);
   const mxp=Math.max(...perf.map(m=>m.n),1);
   document.getElementById('d-perf').innerHTML=perf.length?perf.map(m=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><div style="font-size:11px;color:var(--t2);width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.nome} – ${m.uf}</div><div style="flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:6px;overflow:hidden"><div style="height:100%;border-radius:99px;background:linear-gradient(90deg,var(--a2),var(--ac));width:${Math.round(m.n/mxp*100)}%"></div></div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;width:20px;text-align:right">${m.n}</div><span class="cp c${m.curva||'C'}">${m.curva||'C'}</span></div>`).join(''):`<div class="em" style="padding:20px"><div class="em-ic">🏛</div><div class="em-t">Nenhum contrato ativo</div></div>`;
+
+  // ══ DASHBOARDS EXTRAS ══
+  const anoD=new Date().getFullYear();
+  // 1. Faturamento ativado por mês
+  const fmEl=document.getElementById('d-fatmes');
+  if(fmEl){
+    const mesesAbr=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const porMes=mesesAbr.map((n,i)=>proc.filter(p=>{const d=new Date(p.ini);return !isNaN(d)&&d.getFullYear()===anoD&&d.getMonth()===i&&p.fase==='Contrato Ativo';}).reduce((s,p)=>s+(parseFloat(p.val)||0),0));
+    const mxF=Math.max(...porMes,1);
+    fmEl.innerHTML=porMes.some(v=>v>0)?`<div style="display:flex;align-items:flex-end;gap:5px;height:110px;padding:4px 2px">${porMes.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px" title="${mesesAbr[i]}: ${fmtV(v)}"><div style="width:100%;background:linear-gradient(180deg,var(--gr2),#0a7a5c);border-radius:3px 3px 0 0;height:${Math.max(3,Math.round(v/mxF*85))}px;opacity:${v>0?1:.12}"></div><div style="font-size:8.5px;color:var(--t3)">${mesesAbr[i]}</div></div>`).join('')}</div><div style="text-align:center;font-size:11px;color:var(--t2);margin-top:6px">Total ${anoD}: <strong style="color:var(--gr2)">${fmtV(porMes.reduce((a,b)=>a+b,0))}</strong></div>`:`<div class="em" style="padding:20px"><div class="em-ic">💰</div><div class="em-t">Sem contratos ativados em ${anoD}</div></div>`;
+  }
+  // 2. Documentos por status
+  const dsEl=document.getElementById('d-docstatus');
+  if(dsEl){
+    const semVenc=docs.filter(d=>d.naovence).length;
+    const vencidos=docs.filter(d=>!d.naovence&&d.vencimento&&dias(d.vencimento)<0).length;
+    const crit15=docs.filter(d=>!d.naovence&&dias(d.vencimento)>=0&&dias(d.vencimento)<=15).length;
+    const venc30=docs.filter(d=>!d.naovence&&dias(d.vencimento)>15&&dias(d.vencimento)<=30).length;
+    const ok=docs.length-semVenc-vencidos-crit15-venc30;
+    const stt=[['Válidos',ok,'var(--gr2)'],['Vencem em 30d',venc30,'var(--go2)'],['Críticos (15d)',crit15,'#f97316'],['Vencidos',vencidos,'var(--re2)'],['Não vencem',semVenc,'var(--t3)']];
+    const mxS=Math.max(...stt.map(s=>s[1]),1);
+    dsEl.innerHTML=docs.length?stt.map(([l,n,cor])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:var(--t2);width:110px">${l}</div><div style="flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:7px;overflow:hidden"><div style="height:100%;border-radius:99px;background:${cor};width:${Math.round(n/mxS*100)}%"></div></div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;width:26px;text-align:right;color:${cor}">${n}</div></div>`).join(''):`<div class="em" style="padding:20px"><div class="em-ic">📁</div><div class="em-t">Nenhum documento</div></div>`;
+  }
+  // 3. Top municípios por valor
+  const tvEl=document.getElementById('d-topval');
+  if(tvEl){
+    const porVal=munis.map(m=>({nome:m.nome,uf:m.uf,curva:m.curva,val:proc.filter(p=>p.municipio===m.id&&p.fase==='Contrato Ativo').reduce((s,p)=>s+(parseFloat(p.val)||0),0)})).filter(m=>m.val>0).sort((a,b)=>b.val-a.val).slice(0,5);
+    const mxV=Math.max(...porVal.map(m=>m.val),1);
+    tvEl.innerHTML=porVal.length?porVal.map((m,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--g2);width:18px">${i+1}º</div><div style="font-size:11px;color:var(--t2);width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.nome} – ${m.uf}</div><div style="flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:7px;overflow:hidden"><div style="height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g1),var(--g2));width:${Math.round(m.val/mxV*100)}%"></div></div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:10.5px;width:80px;text-align:right;color:var(--g2)">${fmtV(m.val)}</div></div>`).join(''):`<div class="em" style="padding:20px"><div class="em-ic">🏆</div><div class="em-t">Sem contratos com valor</div></div>`;
+  }
+  // 4. Contatos do mês por tipo
+  const ctEl=document.getElementById('d-conttipo');
+  if(ctEl){
+    const mesAtual=new Date().getMonth();
+    const noMes=[];munis.forEach(m=>(m.hist||[]).forEach(h=>{const d=new Date(h.dat);if(!isNaN(d)&&d.getFullYear()===anoD&&d.getMonth()===mesAtual)noMes.push(h);}));
+    (typeof contatos!=='undefined'?contatos:[]).forEach(x=>{const d=new Date(x.data);if(!isNaN(d)&&d.getFullYear()===anoD&&d.getMonth()===mesAtual)noMes.push({tip:x.tipo==='ligacao'?'phone':x.tipo});});
+    const tipos=[['phone','📞 Ligações'],['whats','💬 WhatsApp'],['visita','🚗 Visitas'],['reuniao','💻 Reuniões'],['email','✉ E-mails']];
+    const cntT=tipos.map(([k,l])=>[l,noMes.filter(h=>h.tip===k).length]);
+    const mxT=Math.max(...cntT.map(x=>x[1]),1);
+    ctEl.innerHTML=noMes.length?cntT.map(([l,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:var(--t2);width:110px">${l}</div><div style="flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:7px;overflow:hidden"><div style="height:100%;border-radius:99px;background:linear-gradient(90deg,var(--a2),var(--ac));width:${Math.round(n/mxT*100)}%"></div></div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:12px;width:22px;text-align:right">${n}</div></div>`).join('')+`<div style="text-align:center;font-size:11px;color:var(--t2);margin-top:4px">Total no mês: <strong>${noMes.length}</strong></div>`:`<div class="em" style="padding:20px"><div class="em-ic">📞</div><div class="em-t">Nenhum contato este mês</div></div>`;
+  }
 }
 
 // ══════════════════════════════════════════════
