@@ -980,8 +980,8 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
   <div class="ni" onclick="go('portais',this)"><span class="ni-ic">🔍</span>Portais</div>
 
   <div class="sb-sec">Licitações</div>
-  <div class="ni" onclick="go('processos',this)"><span class="ni-ic">📋</span>Processos<span class="nb" id="nb-p" style="display:none">0</span></div>
-  <div class="ni" onclick="go('documentos',this)"><span class="ni-ic">📁</span>Documentos<span class="nb" id="nb-d" style="display:none">0</span></div>
+  <div class="ni" onclick="go('processos',this)"><span class="ni-ic">📋</span>Gestão Proc/Contratos<span class="nb" id="nb-p" style="display:none">0</span></div>
+  <div class="ni" onclick="go('documentos',this)"><span class="ni-ic">📁</span>Gestão Documentos<span class="nb" id="nb-d" style="display:none">0</span></div>
   <div class="ni" onclick="go('agenda',this)"><span class="ni-ic">📅</span>Agenda<span class="nb" id="nb-ag" style="display:none">0</span></div>
   <div class="ni" onclick="go('modelos',this)"><span class="ni-ic">📄</span>Modelos</div>
   <div class="ni" onclick="go('faturamento',this)"><span class="ni-ic">💰</span>Faturamento</div>
@@ -1136,17 +1136,31 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
   <div style="padding:0 8px">
     <div class="fr" style="gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <select class="fi" id="rel-emp" style="max-width:250px"><option value="">Todas as empresas</option></select>
-      <select class="fi" id="rel-per" style="max-width:160px">
-        <option value="mes">Mês atual</option>
-        <option value="trim">Trimestre</option>
-        <option value="sem">Semestre</option>
-        <option value="ano" selected>Ano</option>
+      <select class="fi" id="rel-tipo-per" style="max-width:130px" onchange="atualizarPeriodos()">
+        <option value="mes">Mensal</option>
+        <option value="trim">Trimestral</option>
+        <option value="sem">Semestral</option>
+        <option value="ano" selected>Anual</option>
       </select>
+      <select class="fi" id="rel-per-esp" style="max-width:150px"></select>
+      <select class="fi" id="rel-ano" style="max-width:100px"></select>
       <button class="bt bt-gold bt-sm" onclick="rRel();gerarRel('executivo')">👔 Executivo</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('sintetico')">📊 Sintético</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('analitico')">📋 Analítico</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('contratos')">📄 Contratos</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('parcerias')">🤝 Parcerias</button>
+      <button class="bt bt-success bt-sm" onclick="rRel();gerarRel('evolucao')">📈 Evolução do Cliente</button>
+    </div>
+    <div class="card" style="margin-bottom:14px;padding:12px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--g2);letter-spacing:1px;margin-bottom:8px">SEÇÕES DO RELATÓRIO — selecione o que deseja incluir</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-ind" checked> Indicadores</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-fin" checked> Financeiro</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-rel" checked> Relacionamento</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-proc" checked> Processos</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-docs" checked> Documentos</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="sec-parc" checked> Parcerias</label>
+      </div>
     </div>
     <div id="rel-ct"></div>
   </div>
@@ -1829,8 +1843,8 @@ function salvarVisual(){vis.cor1=gv('cfg-cor1');vis.cor2=gv('cfg-cor2');vis.nome
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
-const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Processos & Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Documentos <small>Biblioteca por cliente</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios <small>Executivo · Sintético · Analítico</small>',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>',agenda:'Agenda <small>Prazos e compromissos</small>',modelos:'Modelos <small>Documentos timbrados</small>'};
-const ACTIONS={processos:`<button class="bt bt-p bt-sm" onclick="omProc()">+ Novo Processo</button>`,documentos:`<button class="bt bt-outline bt-sm" onclick="gerarTodasBases()">⊕ Bases</button><button class="bt bt-p bt-sm" onclick="omDoc()">+ Novo Documento</button>`,municipios:`<button class="bt bt-p bt-sm" onclick="omMuni()">+ Novo Município</button><button class="bt bt-g bt-sm" onclick="exportMuniCSV()">⬇ CSV</button>`,parcerias:`<button class="bt bt-p bt-sm" onclick="omParc()">+ Nova Parceria</button>`,empresas:`<button class="bt bt-p bt-sm" onclick="omEmp()">+ Nova Empresa</button>`,faturamento:`<button class="bt bt-g bt-sm" onclick="exportFatCSV()">⬇ CSV</button>`,dashboard:'',portais:'',relatorios:'',config:'',proposta:''};
+const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Gestão de Processos e Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Gestão de Documentos <small>Biblioteca por cliente</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios <small>Executivo · Sintético · Analítico</small>',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>',agenda:'Agenda <small>Prazos e compromissos</small>',modelos:'Modelos <small>Documentos timbrados</small>'};
+const ACTIONS={processos:`<button class="bt bt-p bt-sm" onclick="omProc()">+ Novo Processo</button>`,documentos:`<button class="bt bt-outline bt-sm" onclick="gerarTodasBases()">⊕ Bases</button><button class="bt bt-p bt-sm" onclick="omDoc()">+ Novo Documento</button>`,municipios:`<button class="bt bt-p bt-sm" onclick="omMuni()">+ Novo Município</button><button class="bt bt-g bt-sm" onclick="modeloMuniCSV()">📋 Modelo CSV</button><button class="bt bt-g bt-sm" onclick="document.getElementById('imp-muni-csv').click()">⬆ Importar CSV</button><button class="bt bt-g bt-sm" onclick="exportMuniCSV()">⬇ Exportar</button><input type="file" id="imp-muni-csv" accept=".csv" style="display:none" onchange="importMuniCSV(this)">`,parcerias:`<button class="bt bt-p bt-sm" onclick="omParc()">+ Nova Parceria</button>`,empresas:`<button class="bt bt-p bt-sm" onclick="omEmp()">+ Nova Empresa</button><button class="bt bt-g bt-sm" onclick="modeloEmpCSV()">📋 Modelo CSV</button><button class="bt bt-g bt-sm" onclick="document.getElementById('imp-emp-csv').click()">⬆ Importar CSV</button><input type="file" id="imp-emp-csv" accept=".csv" style="display:none" onchange="importEmpCSV(this)">`,faturamento:`<button class="bt bt-g bt-sm" onclick="exportFatCSV()">⬇ CSV</button>`,dashboard:'',portais:'',relatorios:'',config:'',proposta:''};
 function go(v,el){
   // Recarregar dados frescos ao navegar
   emps=ld(K.emps);docs=ld(K.docs);proc=ld(K.proc);munis=ld(K.munis);parc=ld(K.parc);/* v7 */
@@ -1908,15 +1922,52 @@ function rProc(){
   const q=(gv('s-proc')||'').toLowerCase(),fase=gv('f-fase'),empF=gv('f-emp-p');
   let lista=proc.filter(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio);const txt=[(emp?emp.fan||emp.raz:''),(mun?mun.nome+' '+mun.uf:''),p.esp||''].join(' ').toLowerCase();return(!q||txt.includes(q))&&(!fase||p.fase===fase)&&(!empF||p.empresa===empF);}).sort((a,b)=>new Date(b.criadoEm||0)-new Date(a.criadoEm||0));
   if(!lista.length){document.getElementById('t-proc').innerHTML=`<div class="em"><div class="em-ic">📋</div><div class="em-t">Nenhum processo</div><div class="em-s">Clique em "+ Novo Processo"</div></div>`;return;}
-  document.getElementById('t-proc').innerHTML=`<div class="tw"><table><thead><tr><th>Empresa</th><th>Município</th><th>Especialidade</th><th>Fase</th><th>Valor</th><th>Vencimento</th><th>Drive</th><th></th></tr></thead><tbody>${lista.map(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio),dv=dias(p.fim);return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div class="av" style="width:26px;height:26px;background:${acor(emp?emp.raz:'')};font-size:9px">${ini(emp?emp.fan||emp.raz:'?')}</div>${emp?emp.fan||emp.raz:'—'}</div></td><td>${mun?mun.nome+' – '+mun.uf:'—'}</td><td>${p.esp||'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td style="font-family:Syne,sans-serif;font-weight:700;font-size:11.5px">${fmtV(p.val)}</td><td><span style="color:${dv<30?'var(--re2)':dv<60?'var(--go2)':'var(--t2)'}">${fmtD(p.fim)}</span></td><td>${p.drv?`<a href="${p.drv}" target="_blank" class="drive-link">📁</a>`:'—'}</td><td style="white-space:nowrap"><button class="bt bt-g bt-xs" onclick="omProc('${p.id}')">✏</button><button class="bt bt-d bt-xs" onclick="delProc('${p.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table></div>`;
+  document.getElementById('t-proc').innerHTML=`<div class="tw"><table><thead><tr><th>Empresa</th><th>Município</th><th>Especialidade</th><th>Fase</th><th>Valor</th><th>Vencimento</th><th>Drive</th><th></th></tr></thead><tbody>${lista.map(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio),dv=dias(p.fim);return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div class="av" style="width:26px;height:26px;background:${acor(emp?emp.raz:'')};font-size:9px">${ini(emp?emp.fan||emp.raz:'?')}</div>${emp?emp.fan||emp.raz:'—'}</div></td><td>${p.tipoContr&&p.tipoContr!=='Prefeitura'?`<span class="pl pl-x" style="margin-right:5px">${p.tipoContr}</span>${p.nome||(p.municipios?p.municipios.length+' municípios':'—')}`:(mun?mun.nome+' – '+mun.uf:'—')}</td><td>${p.esp||'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td style="font-family:Syne,sans-serif;font-weight:700;font-size:11.5px">${fmtV(p.val)}</td><td><span style="color:${dv<30?'var(--re2)':dv<60?'var(--go2)':'var(--t2)'}">${fmtD(p.fim)}</span></td><td>${p.drv?`<a href="${p.drv}" target="_blank" class="drive-link">📁</a>`:'—'}</td><td style="white-space:nowrap"><button class="bt bt-g bt-xs" onclick="omProc('${p.id}')">✏</button><button class="bt bt-d bt-xs" onclick="delProc('${p.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table></div>`;
 }
 function omProc(id){
-  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-proc"><div class="mb lg"><div class="mt"><span>${id?'Editar':'Novo'} Processo</span><span class="mx" onclick="cm('mo-proc')">✕</span></div><input type="hidden" id="pr-id" value="${id||''}"><div class="fr"><div class="fg"><label>Empresa</label><select class="fs" id="pr-emp"></select></div><div class="fg"><label>Município</label><select class="fs" id="pr-mun"></select></div></div><div class="fr"><div class="fg"><label>Especialidade</label><input class="fi" id="pr-esp"></div><div class="fg"><label>Nº Processo</label><input class="fi" id="pr-num" placeholder="001/2025"></div></div><div class="fr"><div class="fg"><label>Fase</label><select class="fs" id="pr-fas">${Object.keys(FASES).map(f=>`<option>${f}</option>`).join('')}</select></div><div class="fg"><label>Valor (R$)</label><input class="fi" type="number" id="pr-val"></div></div><div class="fr"><div class="fg"><label>Data Início</label><input class="fi" type="date" id="pr-ini"></div><div class="fg"><label>Data Vencimento</label><input class="fi" type="date" id="pr-fim"></div></div><div class="fr f1"><div class="fg"><label>Link Drive (processo)</label><input class="fi" id="pr-drv" placeholder="https://drive.google.com/..."></div></div><div class="fr f1"><div class="fg"><label>Observações</label><textarea class="fta" id="pr-obs"></textarea></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-proc')">Cancelar</button><button class="bt bt-p" onclick="salvarProc()">💾 Salvar</button></div></div></div>`;
-  pSel('pr-emp',emps,'id',e=>e.fan||e.raz,'');pSel('pr-mun',munis,'id',m=>m.nome+' – '+m.uf,'');
-  if(id){const p=proc.find(x=>x.id===id);if(p)['emp','mun','esp','num','fas','val','ini','fim','drv','obs'].forEach(f=>sv2('pr-'+f,p[f]||''));}
-  else sv2('pr-fas','Em Análise');
+  const TIPOS_CONTR=['Prefeitura','Consórcio','Parceria','Cliente Particular','Hospital','Clínica','Cartão de desconto'];
+  const p=id?proc.find(x=>x.id===id):null;
+  const tipoSel=p?(p.tipoContr||'Prefeitura'):'';
+  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-proc"><div class="mb lg"><div class="mt"><span>${id?'Editar':'Novo'} Processo / Contrato</span><span class="mx" onclick="cm('mo-proc')">✕</span></div>
+    <input type="hidden" id="pr-id" value="${id||''}">
+    <div class="fr f1"><div class="fg"><label>Tipo de Contratante</label><select class="fs" id="pr-tipo" onchange="camposPorTipo()"><option value="">— Selecione o tipo —</option>${TIPOS_CONTR.map(t=>`<option${t===tipoSel?' selected':''}>${t}</option>`).join('')}</select></div></div>
+    <div id="pr-campos"></div>
+    <div class="mf"><button class="bt bt-g" onclick="cm('mo-proc')">Cancelar</button><button class="bt bt-p" onclick="salvarProc()">💾 Salvar</button></div>
+  </div></div>`;
+  camposPorTipo();
+  if(id&&p)setTimeout(()=>carregarProc(p),50);
 }
-function salvarProc(){const id=gv('pr-id')||uid();const p={id,empresa:gv('pr-emp'),municipio:gv('pr-mun'),esp:gv('pr-esp'),num:gv('pr-num'),fase:gv('pr-fas'),val:gv('pr-val'),ini:gv('pr-ini'),fim:gv('pr-fim'),drv:gv('pr-drv'),obs:gv('pr-obs'),criadoEm:Date.now()};const idx=proc.findIndex(x=>x.id===id);if(idx>-1)proc[idx]=p;else proc.push(p);sv(K.proc,proc);cm('mo-proc');rProc();rDash();updBadges();notify('Processo salvo!');}
+function camposPorTipo(){
+  const tipo=gv('pr-tipo'),ct=document.getElementById('pr-campos');if(!ct)return;
+  if(!tipo){ct.innerHTML='<div class="em" style="padding:24px"><div class="em-t">Selecione o tipo de contratante acima</div><div class="em-s">Cada tipo abre campos específicos</div></div>';return;}
+  if(tipo==='Prefeitura'){
+    ct.innerHTML=`<div class="fr"><div class="fg"><label>Empresa</label><select class="fs" id="pr-emp"></select></div><div class="fg"><label>Município</label><select class="fs" id="pr-mun"></select></div></div><div class="fr"><div class="fg"><label>Especialidade</label><input class="fi" id="pr-esp"></div><div class="fg"><label>Nº Processo</label><input class="fi" id="pr-num" placeholder="001/2026"></div></div><div class="fr"><div class="fg"><label>Fase</label><select class="fs" id="pr-fas">${Object.keys(FASES).map(f=>`<option>${f}</option>`).join('')}</select></div><div class="fg"><label>Valor (R$)</label><input class="fi" type="number" id="pr-val"></div></div><div class="fr"><div class="fg"><label>Data Início</label><input class="fi" type="date" id="pr-ini"></div><div class="fg"><label>Data Vencimento</label><input class="fi" type="date" id="pr-fim"></div></div><div class="fr f1"><div class="fg"><label>Link Drive (processo)</label><input class="fi" id="pr-drv" placeholder="https://drive.google.com/..."></div></div><div class="fr f1"><div class="fg"><label>Observações</label><textarea class="fta" id="pr-obs"></textarea></div></div>`;
+    pSel('pr-emp',emps,'id',e=>e.fan||e.raz,'');pSel('pr-mun',munis,'id',m=>m.nome+' – '+m.uf,'');
+  }else if(tipo==='Consórcio'){
+    ct.innerHTML=`<div class="fr"><div class="fg"><label>Nome do Consórcio</label><input class="fi" id="pr-nome"></div><div class="fg"><label>Empresa</label><select class="fs" id="pr-emp"></select></div></div><div class="fg" style="margin-bottom:10px"><label>Municípios Participantes (segure Ctrl para múltiplos)</label><select class="fs" id="pr-munis" multiple style="height:110px">${munis.map(m=>`<option value="${m.id}">${m.nome} – ${m.uf}</option>`).join('')}</select><div style="font-size:10px;color:var(--t3);margin-top:3px">O faturamento não se repete por município — é único do consórcio</div></div><div class="fr"><div class="fg"><label>Especialidade</label><input class="fi" id="pr-esp"></div><div class="fg"><label>Nº Processo</label><input class="fi" id="pr-num"></div></div><div class="fr"><div class="fg"><label>Fase</label><select class="fs" id="pr-fas">${Object.keys(FASES).map(f=>`<option>${f}</option>`).join('')}</select></div><div class="fg"><label>Valor (R$)</label><input class="fi" type="number" id="pr-val"></div></div><div class="fr"><div class="fg"><label>Data Início</label><input class="fi" type="date" id="pr-ini"></div><div class="fg"><label>Data Vencimento</label><input class="fi" type="date" id="pr-fim"></div></div><div class="fr f1"><div class="fg"><label>Link Drive</label><input class="fi" id="pr-drv"></div></div><div class="fr f1"><div class="fg"><label>Observações</label><textarea class="fta" id="pr-obs"></textarea></div></div>`;
+    pSel('pr-emp',emps,'id',e=>e.fan||e.raz,'');
+  }else{
+    ct.innerHTML=`<div class="fr"><div class="fg"><label>Nome</label><input class="fi" id="pr-nome"></div><div class="fg"><label>Empresa</label><select class="fs" id="pr-emp"></select></div></div><div class="fr"><div class="fg"><label>Contato Principal</label><input class="fi" id="pr-contato"></div><div class="fg"><label>Telefone</label><input class="fi" id="pr-tel"></div></div><div class="fr"><div class="fg"><label>E-mail</label><input class="fi" id="pr-email"></div><div class="fg"><label>Status</label><select class="fs" id="pr-status"><option>Ativo</option><option>Em negociação</option><option>Suspenso</option><option>Encerrado</option></select></div></div><div class="fr"><div class="fg"><label>Data Ativação</label><input class="fi" type="date" id="pr-ini"></div><div class="fg"><label>Data Vencimento</label><input class="fi" type="date" id="pr-fim"></div></div><div class="fr"><div class="fg"><label>Valor (R$)</label><input class="fi" type="number" id="pr-val"></div><div class="fg"><label>Clientes Contemplados</label><input class="fi" id="pr-clientes" placeholder="Quantidade ou nomes"></div></div><div class="fr"><div class="fg"><label>Upload Contrato (link Drive)</label><input class="fi" id="pr-drv" placeholder="https://drive.google.com/..."></div><div class="fg"><label>Upload Aditivos (link Drive)</label><input class="fi" id="pr-adit" placeholder="https://drive.google.com/..."></div></div><div class="fr f1"><div class="fg"><label>Observações</label><textarea class="fta" id="pr-obs"></textarea></div></div>`;
+    pSel('pr-emp',emps,'id',e=>e.fan||e.raz,'');
+  }
+}
+function carregarProc(p){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined)el.value=v;};
+  set('pr-emp',p.empresa);set('pr-mun',p.municipio);set('pr-esp',p.esp);set('pr-num',p.num);set('pr-fas',p.fase);set('pr-val',p.val);set('pr-ini',p.ini);set('pr-fim',p.fim);set('pr-drv',p.drv);set('pr-obs',p.obs);
+  set('pr-nome',p.nome);set('pr-contato',p.contato);set('pr-tel',p.tel);set('pr-email',p.email);set('pr-status',p.status);set('pr-clientes',p.clientes);set('pr-adit',p.adit);
+  if(p.municipios&&document.getElementById('pr-munis')){Array.from(document.getElementById('pr-munis').options).forEach(o=>{o.selected=p.municipios.includes(o.value);});}
+}
+function salvarProc(){
+  const id=gv('pr-id')||uid();const tipo=gv('pr-tipo');
+  if(!tipo){notify('Selecione o tipo de contratante','er');return;}
+  const g=x=>{const el=document.getElementById(x);return el?el.value:'';};
+  const p={id,tipoContr:tipo,empresa:g('pr-emp'),esp:g('pr-esp'),num:g('pr-num'),fase:g('pr-fas')||'Ativo',val:g('pr-val'),ini:g('pr-ini'),fim:g('pr-fim'),drv:g('pr-drv'),obs:g('pr-obs'),criadoEm:Date.now()};
+  if(tipo==='Prefeitura')p.municipio=g('pr-mun');
+  else if(tipo==='Consórcio'){p.nome=g('pr-nome');const sel=document.getElementById('pr-munis');p.municipios=sel?Array.from(sel.selectedOptions).map(o=>o.value):[];}
+  else{p.nome=g('pr-nome');p.contato=g('pr-contato');p.tel=g('pr-tel');p.email=g('pr-email');p.status=g('pr-status');p.clientes=g('pr-clientes');p.adit=g('pr-adit');p.fase=p.status==='Ativo'?'Contrato Ativo':p.status;}
+  const ex=proc.find(x=>x.id===id);if(ex&&ex.criadoEm)p.criadoEm=ex.criadoEm;
+  const idx=proc.findIndex(x=>x.id===id);if(idx>-1)proc[idx]=p;else proc.push(p);
+  sv(K.proc,proc);cm('mo-proc');rProc();rDash();updBadges();notify('Processo salvo!');}
 function delProc(id){if(!confirm('Excluir?'))return;proc=proc.filter(x=>x.id!==id);sv(K.proc,proc);rProc();rDash();updBadges();}
 
 // ══════════════════════════════════════════════
@@ -2319,16 +2370,19 @@ function selM(id){
 }
 function omMuni(id){
   const ufs=['SP','MG','RJ','RS','PR','SC','BA','GO','ES','PE','CE','PA','MA','MS','MT','RO','TO','PI','AL','RN','PB','SE','AM','AC','RR','AP','DF'];
-  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-muni"><div class="mb lg"><div class="mt"><span>${id?'Editar':'Novo'} Município</span><span class="mx" onclick="cm('mo-muni')">✕</span></div><input type="hidden" id="mn-id" value="${id||''}"><div class="fr"><div class="fg"><label>Nome</label><input class="fi" id="mn-nom"></div><div class="fg"><label>UF</label><select class="fs" id="mn-uf">${ufs.map(u=>`<option>${u}</option>`).join('')}</select></div></div><div class="fr f3"><div class="fg"><label>Curva ABC</label><select class="fs" id="mn-cur"><option>A</option><option>B</option><option>C</option></select></div><div class="fg"><label>Partido</label><input class="fi" id="mn-par" placeholder="Ex: PSD, PT"></div><div class="fg"><label>Orientação Política</label><select class="fs" id="mn-ori"><option value="">—</option><option value="D">Direita</option><option value="E">Esquerda</option><option value="C">Centro</option></select></div></div><div class="fr"><div class="fg"><label>Prefeito</label><input class="fi" id="mn-pre"></div><div class="fg"><label>Secretário(a) Saúde</label><input class="fi" id="mn-sec"></div></div><div class="fr"><div class="fg"><label>Agendadora</label><input class="fi" id="mn-age"></div><div class="fg"><label>Reguladora</label><input class="fi" id="mn-reg"></div></div><div class="fr f1"><div class="fg"><label>Telefone / E-mail</label><input class="fi" id="mn-con"></div></div><div class="fr f1"><div class="fg"><label>Observações Estratégicas</label><textarea class="fta" id="mn-obs"></textarea></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-muni')">Cancelar</button><button class="bt bt-p" onclick="salvarMuni()">💾 Salvar</button></div></div></div>`;
-  if(id){const m=munis.find(x=>x.id===id);if(m)['nom','uf','cur','par','ori','pre','sec','age','reg','con','obs'].forEach(f=>sv2('mn-'+f,m[f]||''));}
+  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-muni"><div class="mb lg"><div class="mt"><span>${id?'Editar':'Novo'} Município</span><span class="mx" onclick="cm('mo-muni')">✕</span></div><input type="hidden" id="mn-id" value="${id||''}"><div class="fr"><div class="fg"><label>Nome</label><input class="fi" id="mn-nom"></div><div class="fg"><label>UF</label><select class="fs" id="mn-uf">${ufs.map(u=>`<option>${u}</option>`).join('')}</select></div></div><div class="fr f3"><div class="fg"><label>Curva ABC</label><select class="fs" id="mn-cur"><option>A</option><option>B</option><option>C</option></select></div><div class="fg"><label>Partido</label><input class="fi" id="mn-par" placeholder="Ex: PSD, PT"></div><div class="fg"><label>Orientação Política</label><select class="fs" id="mn-ori"><option value="">—</option><option value="D">Direita</option><option value="E">Esquerda</option><option value="C">Centro</option></select></div></div><div style="font-size:10.5px;font-weight:700;color:var(--g2);letter-spacing:1.5px;margin:14px 0 8px">CONTATOS</div><div class="fr"><div class="fg"><label>Prefeito(a)</label><input class="fi" id="mn-pre" placeholder="Nome"></div><div class="fg"><label>Contato do Prefeito</label><input class="fi" id="mn-pretel" placeholder="Telefone / E-mail"></div></div><div class="fr"><div class="fg"><label>Secretário(a) de Saúde</label><input class="fi" id="mn-sec" placeholder="Nome"></div><div class="fg"><label>Contato do Secretário</label><input class="fi" id="mn-sectel" placeholder="Telefone / E-mail"></div></div><div class="fr"><div class="fg"><label>Agendador 1</label><input class="fi" id="mn-age" placeholder="Nome"></div><div class="fg"><label>Contato Agendador 1</label><input class="fi" id="mn-agetel" placeholder="Telefone / E-mail"></div></div><div class="fr"><div class="fg"><label>Agendador 2</label><input class="fi" id="mn-age2" placeholder="Nome"></div><div class="fg"><label>Contato Agendador 2</label><input class="fi" id="mn-age2tel" placeholder="Telefone / E-mail"></div></div><div class="fr"><div class="fg"><label>Reguladora</label><input class="fi" id="mn-reg"></div><div class="fg"><label>Telefone Geral / E-mail</label><input class="fi" id="mn-con"></div></div><div class="fr f1"><div class="fg"><label>Sobre o Município</label><textarea class="fta" id="mn-sobre" placeholder="Contexto, características, informações relevantes..."></textarea></div></div><div class="fr f1"><div class="fg"><label>Observações Estratégicas</label><textarea class="fta" id="mn-obs"></textarea></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-muni')">Cancelar</button><button class="bt bt-p" onclick="salvarMuni()">💾 Salvar</button></div></div></div>`;
+  if(id){const m=munis.find(x=>x.id===id);if(m)sv2('mn-nom',m.nome||'');sv2('mn-uf',m.uf||'');sv2('mn-cur',m.curva||'');sv2('mn-par',m.partido||'');sv2('mn-ori',m.orientacao||'');sv2('mn-pre',m.prefeito||'');sv2('mn-pretel',m.prefeitoTel||'');sv2('mn-sec',m.secretario||'');sv2('mn-sectel',m.secretarioTel||'');sv2('mn-age',m.agendadora||'');sv2('mn-agetel',m.agendadoraTel||'');sv2('mn-age2',m.agendador2||'');sv2('mn-age2tel',m.agendador2Tel||'');sv2('mn-reg',m.reguladora||'');sv2('mn-con',m.contato||'');sv2('mn-sobre',m.sobre||'');sv2('mn-obs',m.obs||'');}
   else{sv2('mn-uf','SP');sv2('mn-cur','B');}
 }
-function salvarMuni(){const id=gv('mn-id')||uid();const ex=munis.find(x=>x.id===id);const m={id,nome:gv('mn-nom'),uf:gv('mn-uf'),curva:gv('mn-cur'),partido:gv('mn-par'),orientacao:gv('mn-ori'),prefeito:gv('mn-pre'),secretario:gv('mn-sec'),agendadora:gv('mn-age'),reguladora:gv('mn-reg'),contato:gv('mn-con'),obs:gv('mn-obs'),hist:ex?ex.hist:[]};const idx=munis.findIndex(x=>x.id===id);if(idx>-1)munis[idx]=m;else munis.push(m);sv(K.munis,munis);cm('mo-muni');if(selMuni===id)selM(id);rMunis();rDash();notify('Município salvo!');}
+function salvarMuni(){const id=gv('mn-id')||uid();const ex=munis.find(x=>x.id===id);const m={id,nome:gv('mn-nom'),uf:gv('mn-uf'),curva:gv('mn-cur'),partido:gv('mn-par'),orientacao:gv('mn-ori'),prefeito:gv('mn-pre'),prefeitoTel:gv('mn-pretel'),secretario:gv('mn-sec'),secretarioTel:gv('mn-sectel'),agendadora:gv('mn-age'),agendadoraTel:gv('mn-agetel'),agendador2:gv('mn-age2'),agendador2Tel:gv('mn-age2tel'),reguladora:gv('mn-reg'),contato:gv('mn-con'),sobre:gv('mn-sobre'),obs:gv('mn-obs'),hist:ex?ex.hist:[]};const idx=munis.findIndex(x=>x.id===id);if(idx>-1)munis[idx]=m;else munis.push(m);sv(K.munis,munis);cm('mo-muni');if(selMuni===id)selM(id);rMunis();rDash();notify('Município salvo!');}
 function delMuni(id){if(!confirm('Excluir?'))return;munis=munis.filter(x=>x.id!==id);sv(K.munis,munis);selMuni=null;const _el_muni_det=document.getElementById('muni-det');if(_el_muni_det)_el_muni_det.innerHTML=`<div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div></div>`;rMunis();rDash();}
 function omInt(muniId){document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-int"><div class="mb"><div class="mt"><span>Registrar Interação</span><span class="mx" onclick="cm('mo-int')">✕</span></div><input type="hidden" id="in-mid" value="${muniId}"><div class="fr"><div class="fg"><label>Data</label><input class="fi" type="date" id="in-dat" value="${new Date().toISOString().split('T')[0]}"></div><div class="fg"><label>Tipo</label><select class="fs" id="in-tip"><option value="phone">📞 Ligação</option><option value="whats">💬 WhatsApp</option><option value="email">✉ E-mail</option><option value="visita">🚗 Visita</option><option value="reuniao">💻 Reunião</option></select></div></div><div class="fr f1"><div class="fg"><label>Com quem</label><input class="fi" id="in-com" placeholder="Nome, cargo..."></div></div><div class="fr f1"><div class="fg"><label>Resultado / Próximos Passos</label><textarea class="fta" id="in-obs"></textarea></div></div><div class="fr f1"><div class="fg"><label>Próximo Follow-up</label><input class="fi" type="date" id="in-fup"></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-int')">Cancelar</button><button class="bt bt-p" onclick="salvarInt()">💾 Registrar</button></div></div></div>`;}
 function salvarInt(){const muniId=gv('in-mid');const m=munis.find(x=>x.id===muniId);if(!m)return;if(!m.hist)m.hist=[];m.hist.push({id:uid(),dat:gv('in-dat'),tip:gv('in-tip'),com:gv('in-com'),obs:gv('in-obs'),fup:gv('in-fup')});sv(K.munis,munis);cm('mo-int');selM(muniId);rDash();notify('Interação registrada!');}
-function exportMuniCSV(){let csv='nome,uf,curva,prefeito,partido,orientacao,secretario,agendadora,reguladora,contato,obs\n';munis.forEach(m=>csv+=`"${m.nome||''}","${m.uf||''}","${m.curva||''}","${m.prefeito||''}","${m.partido||''}","${m.orientacao||''}","${m.secretario||''}","${m.agendadora||''}","${m.reguladora||''}","${m.contato||''}","${m.obs||''}"\n`);dlFile(csv,'municipios_bgc.csv','text/csv');}
-function importMuniCSV(input){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split('\n').slice(1).filter(l=>l.trim());let count=0;lines.forEach(line=>{const p=parseCSVLine(line);if(!p[0])return;const ex=munis.find(m=>m.nome===p[0]&&m.uf===p[1]);const m={id:ex?ex.id:uid(),nome:p[0],uf:p[1],curva:p[2]||'C',prefeito:p[3],partido:p[4],orientacao:p[5],secretario:p[6],agendadora:p[7],reguladora:p[8],contato:p[9],obs:p[10],hist:ex?ex.hist:[]};if(ex){munis[munis.indexOf(ex)]=m;}else{munis.push(m);count++;}});sv(K.munis,munis);rMunis();rDash();notify(`${count} municípios importados!`);};r.readAsText(input.files[0],'utf-8');input.value='';}
+function exportMuniCSV(){let csv='nome,uf,curva,partido,orientacao(D/E/C),prefeito,contato_prefeito,secretario,contato_secretario,agendador1,contato_agendador1,agendador2,contato_agendador2,reguladora,telefone_geral,sobre,obs\n';munis.forEach(m=>csv+=`"${m.nome||''}","${m.uf||''}","${m.curva||''}","${m.partido||''}","${m.orientacao||''}","${m.prefeito||''}","${m.prefeitoTel||''}","${m.secretario||''}","${m.secretarioTel||''}","${m.agendadora||''}","${m.agendadoraTel||''}","${m.agendador2||''}","${m.agendador2Tel||''}","${m.reguladora||''}","${m.contato||''}","${m.sobre||''}","${m.obs||''}"\n`);dlFile(csv,'municipios_bgc.csv','text/csv');}
+function modeloMuniCSV(){const csv='nome,uf,curva,partido,orientacao(D/E/C),prefeito,contato_prefeito,secretario,contato_secretario,agendador1,contato_agendador1,agendador2,contato_agendador2,reguladora,telefone_geral,sobre,obs\n"Janauba","MG","A","PSD","C","Nome do Prefeito","(38) 9999-0000","Nome Secretario","(38) 9999-0001","Nome Agendador 1","(38) 9999-0002","Nome Agendador 2","(38) 9999-0003","Nome Reguladora","(38) 9999-0004","Sobre o municipio","Observacoes"\n';dlFile(csv,'MODELO_municipios_bgc.csv','text/csv');notify('Modelo baixado! Preencha e importe.');}
+function modeloEmpCSV(){const csv='razao_social,nome_fantasia,cnpj,endereco,cidade,uf,telefone,email,responsavel,cpf_responsavel,crm,inscricao_municipal,obs\n"Centro de Imagens Janauba Ltda","CIJ","21.433.486/0001-21","Rua Barao do Gorutuba 178 Centro","Janauba","MG","(38) 98804-1046","email@empresa.com","Dra Sarah Cardoso Fonseca","061.853.106-86","CRM-MG 47.802","82.669.355","Observacoes"\n';dlFile(csv,'MODELO_empresas_bgc.csv','text/csv');notify('Modelo baixado! Preencha e importe.');}
+function importEmpCSV(input){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split('\n').slice(1).filter(l=>l.trim());let count=0;lines.forEach(line=>{const p=parseCSVLine(line);if(!p[0])return;const ex=emps.find(x=>x.raz===p[0]||x.cnpj===p[2]);const emp={id:ex?ex.id:uid(),raz:p[0],fan:p[1],cnpj:p[2],end:p[3],cid:p[4],uf:p[5],tel:p[6],email:p[7],resp:p[8],cpfResp:p[9],crm:p[10],im:p[11],obs:p[12]};if(ex){emps[emps.indexOf(ex)]=Object.assign({},ex,emp);}else{emps.push(emp);count++;}});sv(K.emps,emps);rEmps();rDash();notify(`${count} empresas importadas!`);};r.readAsText(input.files[0],'utf-8');input.value='';}
+function importMuniCSV(input){const r=new FileReader();r.onload=e=>{const lines=e.target.result.split('\n').slice(1).filter(l=>l.trim());let count=0;lines.forEach(line=>{const p=parseCSVLine(line);if(!p[0])return;const ex=munis.find(m=>m.nome===p[0]&&m.uf===p[1]);const m={id:ex?ex.id:uid(),nome:p[0],uf:p[1],curva:p[2]||'C',partido:p[3],orientacao:p[4],prefeito:p[5],prefeitoTel:p[6],secretario:p[7],secretarioTel:p[8],agendadora:p[9],agendadoraTel:p[10],agendador2:p[11],agendador2Tel:p[12],reguladora:p[13],contato:p[14],sobre:p[15],obs:p[16],hist:ex?ex.hist:[]};if(ex){munis[munis.indexOf(ex)]=m;}else{munis.push(m);count++;}});sv(K.munis,munis);rMunis();rDash();notify(`${count} municípios importados!`);};r.readAsText(input.files[0],'utf-8');input.value='';}
 
 // ══════════════════════════════════════════════
 // PARCERIAS – COM EXCLUSÃO MÚTUA AUTOMÁTICA
@@ -2514,7 +2568,7 @@ function delPortal(id){if(!confirm('Remover?'))return;portais=portais.filter(x=>
 // ══════════════════════════════════════════════
 // RELATÓRIOS
 // ══════════════════════════════════════════════
-function rRel(){pSel('rel-emp',emps,'id',e=>e.fan||e.raz,'');}
+function rRel(){atualizarPeriodos();pSel('rel-emp',emps,'id',e=>e.fan||e.raz,'');}
 // ══ TIMBRADO WORD (Padrão Ressonar) ══
 function timbradoHTML(emp){
   const e=emp||{};
@@ -2534,13 +2588,44 @@ function baixarWord(html,nome){
   notify('✅ '+nome+' baixado em Word!');
 }
 
+
+// Períodos específicos dos relatórios
+const MESES_NOME=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function atualizarPeriodos(){
+  const tipo=gv('rel-tipo-per'),sel=document.getElementById('rel-per-esp');if(!sel)return;
+  const mesAtual=new Date().getMonth();
+  if(tipo==='mes')sel.innerHTML=MESES_NOME.map((m,i)=>`<option value="${i}"${i===mesAtual?' selected':''}>${m}</option>`).join('');
+  else if(tipo==='trim')sel.innerHTML=['1º Trimestre','2º Trimestre','3º Trimestre','4º Trimestre'].map((t,i)=>`<option value="${i}"${i===Math.floor(mesAtual/3)?' selected':''}>${t}</option>`).join('');
+  else if(tipo==='sem')sel.innerHTML=['1º Semestre','2º Semestre'].map((s,i)=>`<option value="${i}"${i===Math.floor(mesAtual/6)?' selected':''}>${s}</option>`).join('');
+  else sel.innerHTML='<option value="0">Ano completo</option>';
+  const anoSel=document.getElementById('rel-ano');
+  if(anoSel&&!anoSel.options.length){const a=new Date().getFullYear();anoSel.innerHTML=[a-2,a-1,a,a+1].map(x=>`<option${x===a?' selected':''}>${x}</option>`).join('');}
+}
+function periodoLabel(){
+  const tipo=gv('rel-tipo-per'),esp=parseInt(gv('rel-per-esp'))||0,ano=gv('rel-ano')||new Date().getFullYear();
+  if(tipo==='mes')return MESES_NOME[esp]+' / '+ano;
+  if(tipo==='trim')return(esp+1)+'º Trimestre / '+ano;
+  if(tipo==='sem')return(esp+1)+'º Semestre / '+ano;
+  return 'Ano '+ano;
+}
+function dentroPeriodo(dataStr){
+  if(!dataStr)return false;const d=new Date(dataStr);if(isNaN(d))return false;
+  const tipo=gv('rel-tipo-per'),esp=parseInt(gv('rel-per-esp'))||0,ano=parseInt(gv('rel-ano'))||new Date().getFullYear();
+  if(d.getFullYear()!==ano)return false;
+  if(tipo==='mes')return d.getMonth()===esp;
+  if(tipo==='trim')return Math.floor(d.getMonth()/3)===esp;
+  if(tipo==='sem')return Math.floor(d.getMonth()/6)===esp;
+  return true;
+}
+function secAtiva(s){const el=document.getElementById('sec-'+s);return el?el.checked:true;}
+
 function gerarRel(tipo){
   const empF=gv('rel-emp'),empSel=empF?emps.find(e=>e.id===empF):null;
   const pF=proc.filter(p=>!empF||p.empresa===empF),dF=docs.filter(d=>!empF||d.empresa===empF);
   const cF=contatos.filter(c=>!empF||c.empresa===empF);
   const hoje=new Date().toISOString().split('T')[0];
-  const per={mes:'Mês atual',trim:'Trimestre',sem:'Semestre',ano:'Ano'}[gv('rel-per')]||'';
-  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias'}[tipo];
+  const per=periodoLabel();
+  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias',evolucao:'Evolução do Cliente'}[tipo];
   const at=pF.filter(p=>p.fase==='Contrato Ativo').length;
   const and=pF.filter(p=>!['Arquivado','Contrato Ativo'].includes(p.fase)).length;
   const crit=dF.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
@@ -2559,23 +2644,41 @@ function gerarRel(tipo){
     <p style="font-size:12px;color:var(--t2);line-height:1.9"><strong>Conclusão:</strong> pipeline com ${pF.length} processo(s), ${at} ativo(s). ${crit>0?`<strong style="color:var(--re2)">Atenção:</strong> ${crit} documento(s) críticos requerem intervenção.`:'Operação regularizada.'}</p>`;
   }
   else if(tipo==='sintetico'){
-    html+=`<div class="g3" style="margin-bottom:14px">
+    if(secAtiva('ind'))html+=`<div class="g3" style="margin-bottom:14px">
       <div class="ib"><div class="il">Contratos Ativos</div><div class="iv" style="color:var(--go2)">${at}</div></div>
       <div class="ib"><div class="il">Em Andamento</div><div class="iv" style="color:var(--a2)">${and}</div></div>
-      <div class="ib"><div class="il">Docs Críticos</div><div class="iv" style="color:var(--re2)">${crit}</div></div>
-    </div>
-    <div class="g3" style="margin-bottom:14px">
+      ${secAtiva('docs')?`<div class="ib"><div class="il">Docs Críticos</div><div class="iv" style="color:var(--re2)">${crit}</div></div>`:''}
+    </div>`;
+    if(secAtiva('fin'))html+=`<div class="g3" style="margin-bottom:14px"><div class="ib"><div class="il">Faturamento Estimado</div><div class="iv" style="color:var(--gr2);font-size:15px">${fmtV(fatTotal)}</div></div><div class="ib"><div class="il">Ticket Médio</div><div class="iv" style="font-size:15px">${fmtV(at?fatTotal/at:0)}</div></div><div class="ib"><div class="il">Pipeline</div><div class="iv">${pF.length}</div></div></div>`;
+    if(secAtiva('rel'))html+=`<div class="g3" style="margin-bottom:14px">
       <div class="ib"><div class="il">Ligações</div><div class="iv">${lig}</div></div>
       <div class="ib"><div class="il">Visitas</div><div class="iv">${vis}</div></div>
-      <div class="ib"><div class="il">Parcerias</div><div class="iv">${parc.length}</div></div>
-    </div>
+      ${secAtiva('parc')?`<div class="ib"><div class="il">Parcerias</div><div class="iv">${parc.length}</div></div>`:''}
+    </div>`;
+    html+=`
     <p style="font-size:12px;color:var(--t2);line-height:1.9">A BGC gerenciou <strong style="color:var(--te)">${pF.length} processo(s)</strong> com <strong style="color:var(--te)">${at}</strong> ativo(s). ${crit>0?`<strong style="color:var(--re2)">${crit} doc(s)</strong> requerem renovação urgente.`:'Documentação regularizada.'}</p>`;
   }
   else if(tipo==='analitico'){
-    html+=`<div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📞 RELACIONAMENTO (${cF.length} contato(s))</div>
-    <div class="tw" style="margin-bottom:14px"><table><thead><tr><th>Data</th><th>Tipo</th><th>Município</th><th>Responsável</th><th>Resumo</th><th>Próximo Passo</th></tr></thead><tbody>${cF.slice(0,30).map(c=>{const m=munis.find(x=>x.id===c.municipio);return`<tr><td>${fmtD(c.data)} ${c.hora||''}</td><td>${{ligacao:'📞 Ligação',visita:'🚗 Visita',reuniao:'👥 Reunião'}[c.tipo]||c.tipo}</td><td>${m?m.nome:'—'}</td><td>${c.resp||'—'}</td><td style="font-size:10.5px">${c.resumo||'—'}</td><td style="font-size:10.5px">${c.proximo||'—'}</td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--t3)">Nenhum contato registrado</td></tr>'}</tbody></table></div>
-    <div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📋 PROCESSOS</div>
-    <div class="tw"><table><thead><tr><th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th></tr></thead><tbody>${pF.map(p=>{const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome:'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`;
+    const cP=cF.filter(x=>dentroPeriodo(x.data));
+    if(secAtiva('rel'))html+=`<div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📞 RELACIONAMENTO — ${per} (${cP.length} contato(s))</div>
+    <div class="tw" style="margin-bottom:14px"><table><thead><tr><th>Data</th><th>Tipo</th><th>Município</th><th>Responsável</th><th>Resumo</th><th>Próximo Passo</th></tr></thead><tbody>${cP.slice(0,50).map(c=>{const m=munis.find(x=>x.id===c.municipio);return`<tr><td>${fmtD(c.data)} ${c.hora||''}</td><td>${{ligacao:'📞 Ligação',visita:'🚗 Visita',reuniao:'👥 Reunião'}[c.tipo]||c.tipo}</td><td>${m?m.nome:'—'}</td><td>${c.resp||'—'}</td><td style="font-size:10.5px">${c.resumo||'—'}</td><td style="font-size:10.5px">${c.proximo||'—'}</td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--t3)">Nenhum contato registrado</td></tr>'}</tbody></table></div>
+    ${secAtiva('proc')?`<div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📋 PROCESSOS</div>
+    <div class="tw"><table><thead><tr><th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th></tr></thead><tbody>${pF.map(p=>{const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome:'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`:''}`;
+  }
+  else if(tipo==='evolucao'){
+    const anoE=parseInt(gv('rel-ano'))||new Date().getFullYear();
+    const porMes=MESES_NOME.map((nome,i)=>{
+      const contrIni=pF.filter(p=>{const d=new Date(p.ini);return !isNaN(d)&&d.getFullYear()===anoE&&d.getMonth()===i;});
+      const contMes=cF.filter(x=>{const d=new Date(x.data);return !isNaN(d)&&d.getFullYear()===anoE&&d.getMonth()===i;});
+      const valMes=contrIni.reduce((s,p)=>s+(parseFloat(p.val)||0),0);
+      return{nome,contratos:contrIni.length,contatos:contMes.length,valor:valMes};
+    });
+    const maxV=Math.max(...porMes.map(m=>m.valor),1);
+    html+=`<div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:10px">📈 EVOLUÇÃO MENSAL — ${empSel?empSel.fan||empSel.raz:'Todas as empresas'} · ${anoE}</div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:130px;margin-bottom:6px;padding:0 4px">${porMes.map(m=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="font-size:9px;color:var(--gr2);font-weight:700">${m.valor>0?fmtV(m.valor).replace('R$\u00a0','').replace(',00',''):''}</div><div style="width:100%;background:linear-gradient(180deg,var(--g1),var(--g2));border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(m.valor/maxV*95))}px;opacity:${m.valor>0?1:.15}"></div></div>`).join('')}</div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;padding:0 4px">${porMes.map(m=>`<div style="flex:1;text-align:center;font-size:9px;color:var(--t3)">${m.nome.substring(0,3)}</div>`).join('')}</div>
+    <div class="tw"><table><thead><tr><th>Mês</th><th>Contratos Ativados</th><th>Valor Ativado</th><th>Contatos (lig/vis/reun)</th></tr></thead><tbody>${porMes.map(m=>`<tr${m.contratos+m.contatos===0?' style="opacity:.4"':''}><td>${m.nome}</td><td>${m.contratos}</td><td>${m.valor>0?fmtV(m.valor):'—'}</td><td>${m.contatos}</td></tr>`).join('')}</tbody></table></div>
+    <p style="font-size:12px;color:var(--t2);line-height:1.9;margin-top:12px"><strong>Total no ano:</strong> ${porMes.reduce((s,m)=>s+m.contratos,0)} contrato(s) ativado(s) · ${fmtV(porMes.reduce((s,m)=>s+m.valor,0))} · ${porMes.reduce((s,m)=>s+m.contatos,0)} contato(s) realizados.</p>`;
   }
   else{const ls=tipo==='parcerias'?parc.filter(p=>!empF||(p.empresas||[]).includes(empF)):pF;html+=`<div class="tw"><table><thead><tr>${tipo==='parcerias'?'<th>Município</th><th>Tipo</th><th>Pagamento</th><th>Status</th>':'<th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th>'}</tr></thead><tbody>${ls.map(p=>{if(tipo==='parcerias'){const mun=munis.find(m=>m.id===p.municipio);return`<tr><td>${mun?mun.nome+' – '+mun.uf:'—'}</td><td>${p.tipo||'—'}</td><td>${p.pagamento||'—'}</td><td>${p.status||'—'}</td></tr>`;}const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome+' – '+m.uf:'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`;}
   html+='</div>';document.getElementById('rel-ct').innerHTML=html;
@@ -2585,8 +2688,8 @@ function baixarRelWord(tipo){
   const empF=gv('rel-emp'),empSel=empF?emps.find(e=>e.id===empF):null;
   const pF=proc.filter(p=>!empF||p.empresa===empF),dF=docs.filter(d=>!empF||d.empresa===empF);
   const cF=contatos.filter(c=>!empF||c.empresa===empF);
-  const per={mes:'Mês atual',trim:'Trimestre',sem:'Semestre',ano:'Ano'}[gv('rel-per')]||'';
-  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias'}[tipo];
+  const per=periodoLabel();
+  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias',evolucao:'Evolução do Cliente'}[tipo];
   const at=pF.filter(p=>p.fase==='Contrato Ativo').length;
   const and=pF.filter(p=>!['Arquivado','Contrato Ativo'].includes(p.fase)).length;
   const crit=dF.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
