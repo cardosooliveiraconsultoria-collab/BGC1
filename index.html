@@ -1042,7 +1042,16 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="ph-left"><div class="ph-gold">CRM</div><div class="ph-title">Municípios</div><div class="ph-sub">Gestão do território de atuação</div></div>
     <div class="ph-right"><button class="bt bt-gold bt-sm" onclick="omMuni()">+ Novo</button></div>
   </div>
-  <div id="l-munis"></div>
+  <div style="display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;gap:8px">
+        <input class="fi" id="s-muni" placeholder="🔍 Buscar..." oninput="rMunis()" style="flex:1">
+        <select class="fs" id="f-curva" onchange="rMunis()" style="width:70px"><option value="">Todas</option><option>A</option><option>B</option><option>C</option></select>
+      </div>
+      <div id="l-munis" style="max-height:calc(100vh - 250px);overflow-y:auto"></div>
+    </div>
+    <div class="card" id="muni-det"><div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div><div class="em-s">Clique em um município da lista para ver detalhes, registrar contatos e acompanhar processos</div></div></div>
+  </div>
 </div>
 
 <!-- ══ PARCERIAS ══ -->
@@ -1809,7 +1818,7 @@ function aplicarVisual(){
   /* tema v7 */
   if(vis.bgImg){document.documentElement.style.setProperty('--bg-img',`url(${vis.bgImg})`);document.documentElement.style.setProperty('--bg-op','0.08');}
   if(vis.logo){const i=document.getElementById('sb-logo');if(i){i.src=vis.logo;i.style.display='block';}}
-  if(vis.nomeEmp){const n=document.getElementById('sb-nome');if(n)n.innerHTML=vis.nomeEmp;}
+  if(vis.nomeEmp){const n=document.getElementById('sb-profile-name');if(n)n.innerHTML=vis.nomeEmp;}
 }
 function uploadLogo(inp){const r=new FileReader();r.onload=e=>{vis.logo=e.target.result;sv(K.vis,vis);const i=document.getElementById('sb-logo');i.src=vis.logo;i.style.display='block';const _pl1=document.getElementById('prev-logo');if(_pl1)_pl1.src=vis.logo;const _pl2=document.getElementById('prev-logo');if(_pl2)_pl2.style.display='block';};r.readAsDataURL(inp.files[0]);}
 function uploadBg(inp){const r=new FileReader();r.onload=e=>{vis.bgImg=e.target.result;sv(K.vis,vis);document.documentElement.style.setProperty('--bg-img',`url(${vis.bgImg})`);document.documentElement.style.setProperty('--bg-op','0.08');};r.readAsDataURL(inp.files[0]);}
@@ -1871,12 +1880,12 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.tar
 // DASHBOARD
 // ══════════════════════════════════════════════
 function rDash(){
-  if(!document.getElementById('k-proc'))return;
-  document.getElementById('k-proc').textContent=proc.filter(p=>p.fase!=='Arquivado').length;
-  document.getElementById('k-cont').textContent=proc.filter(p=>p.fase==='Contrato Ativo').length;
-  document.getElementById('k-muni').textContent=munis.length;
-  document.getElementById('k-docs').textContent=docs.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
-  document.getElementById('k-parc').textContent=parc.filter(p=>p.status==='Ativo').length;
+  if(!document.getElementById('kp-proc'))return;
+  document.getElementById('kp-proc').textContent=proc.filter(p=>p.fase!=='Arquivado').length;
+  document.getElementById('kp-cont').textContent=proc.filter(p=>p.fase==='Contrato Ativo').length;
+  document.getElementById('kp-mun').textContent=munis.length;
+  document.getElementById('kp-docs').textContent=docs.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
+  document.getElementById('kp-parc').textContent=parc.filter(p=>p.status==='Ativo').length;
   const cnt={};Object.keys(FASES).forEach(f=>cnt[f]=0);proc.forEach(p=>{if(cnt[p.fase]!==undefined)cnt[p.fase]++;});
   const mx=Math.max(...Object.values(cnt),1);
   document.getElementById('d-funil').innerHTML=Object.keys(FASES).map(f=>`<div class="fn"><div class="fl">${f}</div><div class="fw"><div class="fb" style="width:${Math.round(cnt[f]/mx*100)}%;background:${FASES[f].bar}"></div></div><div class="fn2" style="color:${FASES[f].bar}">${cnt[f]}</div></div>`).join('');
@@ -2938,6 +2947,7 @@ function salvarCfgIA(){
 function salvarCfgDrive(){cfg.clientId=gv('cfg-cid');cfg.folderId=gv('cfg-folder');sv(K.cfg,cfg);notify('Configuração salva! Clique Conectar com Google.');}
 function expBkp(){exportarDados();}
 function exportarDados(){const d={proc,docs,munis,emps,portais,fat,parc,exportadoEm:new Date().toISOString()};dlFile(JSON.stringify(d,null,2),'bgc_backup_'+new Date().toISOString().split('T')[0]+'.json','application/json');notify('Backup exportado!');}
+function impBkp(inp){importarDados(inp);}
 function importarDados(input){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.proc){proc=d.proc;sv(K.proc,proc);}if(d.docs){docs=d.docs;sv(K.docs,docs);}if(d.munis){munis=d.munis;sv(K.munis,munis);}if(d.emps){emps=d.emps;sv(K.emps,emps);}if(d.portais){portais=d.portais;sv(K.portais,portais);}if(d.fat){fat=d.fat;sv(K.fat,fat);}if(d.parc){parc=d.parc;sv(K.parc,parc);}notify('Dados importados!');rDash();}catch{notify('Erro ao importar','er');}};r.readAsText(input.files[0]);input.value='';}
 
 // ══════════════════════════════════════════════
