@@ -982,6 +982,8 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
   <div class="sb-sec">Licitações</div>
   <div class="ni" onclick="go('processos',this)"><span class="ni-ic">📋</span>Processos<span class="nb" id="nb-p" style="display:none">0</span></div>
   <div class="ni" onclick="go('documentos',this)"><span class="ni-ic">📁</span>Documentos<span class="nb" id="nb-d" style="display:none">0</span></div>
+  <div class="ni" onclick="go('agenda',this)"><span class="ni-ic">📅</span>Agenda<span class="nb" id="nb-ag" style="display:none">0</span></div>
+  <div class="ni" onclick="go('modelos',this)"><span class="ni-ic">📄</span>Modelos</div>
   <div class="ni" onclick="go('faturamento',this)"><span class="ni-ic">💰</span>Faturamento</div>
   <div class="ni" onclick="go('relatorios',this)"><span class="ni-ic">📊</span>Relatórios</div>
 
@@ -1121,7 +1123,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 
 <!-- ══ RELATÓRIOS ══ -->
 <div class="vw" id="vw-relatorios">
-  <div class="ph"><div class="ph-left"><div class="ph-gold">Análises</div><div class="ph-title">Relatórios</div></div></div>
+  <div class="ph"><div class="ph-left"><div class="ph-gold">Análises</div><div class="ph-title">Relatórios</div><div class="ph-sub">Executivo · Sintético · Analítico — todos timbrados, download em Word</div></div></div>
   <div style="padding:0 8px">
     <div class="fr" style="gap:10px;margin-bottom:16px;flex-wrap:wrap">
       <select class="fi" id="rel-emp" style="max-width:250px"><option value="">Todas as empresas</option></select>
@@ -1131,12 +1133,47 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
         <option value="sem">Semestre</option>
         <option value="ano" selected>Ano</option>
       </select>
+      <button class="bt bt-gold bt-sm" onclick="rRel();gerarRel('executivo')">👔 Executivo</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('sintetico')">📊 Sintético</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('analitico')">📋 Analítico</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('contratos')">📄 Contratos</button>
       <button class="bt bt-outline bt-sm" onclick="rRel();gerarRel('parcerias')">🤝 Parcerias</button>
     </div>
     <div id="rel-ct"></div>
+  </div>
+</div>
+
+<!-- ══ AGENDA ══ -->
+<div class="vw" id="vw-agenda">
+  <div class="ph"><div class="ph-left"><div class="ph-gold">Compromissos</div><div class="ph-title">Agenda</div><div class="ph-sub">Prazos, vencimentos, renovações e visitas</div></div>
+  <div style="display:flex;gap:8px"><button class="bt bt-gold bt-sm" onclick="omEvento()">+ Novo Evento</button></div></div>
+  <div style="padding:0 8px">
+    <div class="fr" style="gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select class="fi" id="ag-filtro" style="max-width:220px" onchange="rAgenda()">
+        <option value="">Todos os tipos</option>
+        <option value="prazo">⏰ Prazos de propostas</option>
+        <option value="venc">📁 Vencimentos de documentos</option>
+        <option value="renov">🔄 Renovações de contrato</option>
+        <option value="visita">🚗 Visitas agendadas</option>
+        <option value="outro">📌 Outros</option>
+      </select>
+      <select class="fi" id="ag-periodo" style="max-width:180px" onchange="rAgenda()">
+        <option value="7">Próximos 7 dias</option>
+        <option value="15">Próximos 15 dias</option>
+        <option value="30" selected>Próximos 30 dias</option>
+        <option value="90">Próximos 90 dias</option>
+        <option value="all">Todos</option>
+      </select>
+    </div>
+    <div id="ag-ct"></div>
+  </div>
+</div>
+
+<!-- ══ MODELOS DE DOCUMENTOS ══ -->
+<div class="vw" id="vw-modelos">
+  <div class="ph"><div class="ph-left"><div class="ph-gold">Biblioteca</div><div class="ph-title">Modelos de Documentos</div><div class="ph-sub">Gere documentos timbrados com dados do cliente — download em Word</div></div></div>
+  <div style="padding:0 8px">
+    <div class="g2" style="gap:14px" id="mod-grid"></div>
   </div>
 </div>
 
@@ -1482,7 +1519,8 @@ function ltab(t){
 // DADOS
 // ══════════════════════════════════════════════
 const K={proc:'bgc_proc',docs:'bgc_docs',munis:'bgc_munis',emps:'bgc_emps',
-  portais:'bgc_portais',fat:'bgc_fat',parc:'bgc_parc',cfg:'bgc_cfg',vis:'bgc_vis'};
+  portais:'bgc_portais',fat:'bgc_fat',parc:'bgc_parc',cfg:'bgc_cfg',vis:'bgc_vis',
+  agenda:'bgc_agenda',contatos:'bgc_contatos'};
 const ld=k=>{try{return JSON.parse(localStorage.getItem(k))||[];}catch{return[];}};
 const ldo=k=>{try{return JSON.parse(localStorage.getItem(k))||{};}catch{return{};}};
 const sv=(k,d)=>localStorage.setItem(k,JSON.stringify(d));
@@ -1500,6 +1538,7 @@ const _SEED_DOCS = [{"id": "doc-001-cnd-0073", "empresa": "emp-cij-001", "tipo":
 })();
 // ══ FIM SEED ══
 let proc=ld(K.proc),docs=ld(K.docs),munis=ld(K.munis),emps=ld(K.emps);
+let agenda=ld(K.agenda),contatos=ld(K.contatos);
 let portais=ld(K.portais),fat=ldo(K.fat),parc=ld(K.parc);
 let cfg=ldo(K.cfg),vis=ldo(K.vis);
 // Pré-configurar credenciais Google se ainda não salvas
@@ -1781,7 +1820,7 @@ function salvarVisual(){vis.cor1=gv('cfg-cor1');vis.cor2=gv('cfg-cor2');vis.nome
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
-const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Processos & Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Documentos <small>Por cliente · Upload Drive</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>'};
+const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Processos & Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Documentos <small>Biblioteca por cliente</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios <small>Executivo · Sintético · Analítico</small>',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>',agenda:'Agenda <small>Prazos e compromissos</small>',modelos:'Modelos <small>Documentos timbrados</small>'};
 const ACTIONS={processos:`<button class="bt bt-p bt-sm" onclick="omProc()">+ Novo Processo</button>`,documentos:`<button class="bt bt-outline bt-sm" onclick="gerarTodasBases()">⊕ Bases</button><button class="bt bt-p bt-sm" onclick="omDoc()">+ Novo Documento</button>`,municipios:`<button class="bt bt-p bt-sm" onclick="omMuni()">+ Novo Município</button><button class="bt bt-g bt-sm" onclick="exportMuniCSV()">⬇ CSV</button>`,parcerias:`<button class="bt bt-p bt-sm" onclick="omParc()">+ Nova Parceria</button>`,empresas:`<button class="bt bt-p bt-sm" onclick="omEmp()">+ Nova Empresa</button>`,faturamento:`<button class="bt bt-g bt-sm" onclick="exportFatCSV()">⬇ CSV</button>`,dashboard:'',portais:'',relatorios:'',config:'',proposta:''};
 function go(v,el){
   // Recarregar dados frescos ao navegar
@@ -1793,7 +1832,7 @@ function go(v,el){
   if(el)el.classList.add('on');
   document.getElementById('pg-title').innerHTML=TITLES[v]||v;
   const _el_tb_act=document.getElementById('tb-act');if(_el_tb_act)_el_tb_act.innerHTML=ACTIONS[v]||'';
-  ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg})[v]?.();
+  ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg,agenda:rAgenda,modelos:rModelos})[v]?.();
   updBadges();
 }
 
@@ -2003,19 +2042,73 @@ function exportChecklistEmp(empId){
   a.click();
   notify('Checklist de '+nome+' exportado!');
 }
+// ── Seleção de docs para ZIP ──
+let _docsSel={};
+function toggleDocSel(id,el){
+  if(_docsSel[id])delete _docsSel[id];else _docsSel[id]=true;
+  el.closest('.doc-row').classList.toggle('doc-sel',!!_docsSel[id]);
+  _atualizarBtnZip();
+}
+function _atualizarBtnZip(){
+  const n=Object.keys(_docsSel).length;
+  const barra=document.getElementById('doc-zip-bar');
+  if(!barra)return;
+  if(n===0){barra.style.display='none';return;}
+  barra.style.display='flex';
+  document.getElementById('doc-zip-count').textContent=n+' documento(s) selecionado(s)';
+}
+function baixarDocsSelecionados(){
+  const ids=Object.keys(_docsSel);
+  if(!ids.length){notify('Selecione ao menos um documento','e');return;}
+  const contratante=prompt('Nome do Contratante (prefeitura/consórcio):','');
+  if(!contratante)return;
+  // Pegar empresa do primeiro doc selecionado
+  const d0=docs.find(d=>d.id===ids[0]);
+  const emp=d0?emps.find(e=>e.id===d0.empresa):null;
+  const nomeCliente=emp?emp.fan||emp.raz:'Cliente';
+  const nomeZip=`CHECKLIST — ${nomeCliente} — ${contratante}`;
+  // Se tiver só um, baixar direto
+  if(ids.length===1){
+    const d=docs.find(x=>x.id===ids[0]);
+    if(d&&d.drv){window.open(d.drv,'_blank');}
+    else{notify('Documento sem arquivo no Drive','e');}
+    return;
+  }
+  // Montar relatório dos docs selecionados para download
+  const linhas=ids.map(id=>{const d=docs.find(x=>x.id===id);if(!d)return'';return`<tr><td>${d.tipo}</td><td>${fmtD(d.vencimento)||'Sem vencimento'}</td><td>${d.drv?`<a href="${d.drv}">Abrir</a>`:'Sem arquivo'}</td><td>${d.obs||'—'}</td></tr>`;}).join('');
+  const html=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial;font-size:11pt;margin:2cm}h1{color:#1F3864;font-size:14pt;border-bottom:3px solid #C9A84C;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#1F3864;color:#fff;padding:8px;font-size:10pt;text-align:left}td{padding:7px 8px;border-bottom:1px solid #ddd;font-size:10pt}tr:nth-child(even){background:#f5f7fa}</style></head><body><h1>CHECKLIST — ${nomeCliente} — ${contratante}</h1><p style="font-size:10pt;color:#666">Gerado em ${new Date().toLocaleDateString('pt-BR')} | ${ids.length} documento(s)</p><table><thead><tr><th>Documento</th><th>Vencimento</th><th>Arquivo</th><th>Observações</th></tr></thead><tbody>${linhas}</tbody></table><p style="margin-top:40px;font-size:9pt;color:#999">BGC Consultoria — Cardoso Oliveira Consultoria</p></body></html>`;
+  const blob=new Blob([html],{type:'application/msword'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${nomeZip}.doc`;a.click();
+  notify(`✅ Checklist "${nomeZip}" baixado!`);
+  _docsSel={};_atualizarBtnZip();
+  rDocs();
+}
+
 function rDocs(){
+  _docsSel={};
   pSel('f-emp-d',emps,'id',e=>e.fan||e.raz,'');
   const q=(gv('s-doc')||'').toLowerCase(),empF=gv('f-emp-d'),sit=gv('f-sit-d');
-  let lista=docs.filter(d=>{const emp=emps.find(e=>e.id===d.empresa);const txt=[(emp?emp.fan||emp.raz:''),d.tipo,d.municipio||''].join(' ').toLowerCase();const dv=dias(d.vencimento);return(!q||txt.includes(q))&&(!empF||d.empresa===empF)&&(!sit||(sit==='crit'&&dv<=15)||(sit==='warn'&&dv>15&&dv<=30)||(sit==='ok'&&dv>30));}).sort((a,b)=>dias(a.vencimento)-dias(b.vencimento));
+  let lista=docs.filter(d=>{
+    const emp=emps.find(e=>e.id===d.empresa);
+    const txt=[(emp?emp.fan||emp.raz:''),d.tipo].join(' ').toLowerCase();
+    const dv=dias(d.vencimento);
+    return(!q||txt.includes(q))&&(!empF||d.empresa===empF)&&(!sit||(sit==='crit'&&dv<=15)||(sit==='warn'&&dv>15&&dv<=30)||(sit==='ok'&&dv>30));
+  }).sort((a,b)=>dias(a.vencimento)-dias(b.vencimento));
   const byEmp={};lista.forEach(d=>{if(!byEmp[d.empresa])byEmp[d.empresa]=[];byEmp[d.empresa].push(d);});
-  if(!lista.length){document.getElementById('t-docs').innerHTML=`<div class="em"><div class="em-ic">📁</div><div class="em-t">Nenhum documento</div><div class="em-s">Clique em "+ Novo Documento" para cadastrar com upload</div></div>`;return;}
-  let html='';
+  if(!lista.length){document.getElementById('t-docs').innerHTML=`<div class="em"><div class="em-ic">📁</div><div class="em-t">Biblioteca vazia</div><div class="em-s">Clique em "+ Novo Documento" para cadastrar</div></div>`;return;}
+  // Barra de ação ZIP
+  let html=`<div id="doc-zip-bar" style="display:none;align-items:center;gap:10px;padding:10px 16px;background:var(--c2);border-bottom:2px solid var(--gc);position:sticky;top:0;z-index:10">
+    <span id="doc-zip-count" style="font-size:12px;font-weight:600;color:var(--g2)"></span>
+    <button class="bt bt-p bt-sm" onclick="baixarDocsSelecionados()">⬇ Baixar Selecionados</button>
+    <button class="bt bt-g bt-sm" onclick="_docsSel={};_atualizarBtnZip();rDocs()">✕ Limpar seleção</button>
+  </div>`;
   Object.entries(byEmp).forEach(([eid,ddocs])=>{
     const emp=emps.find(e=>e.id===eid),en=emp?emp.fan||emp.raz:'Empresa';
-    const docsFaltando = TIPOS_DOC_BASE.filter(t=>!ddocs.some(d=>d.tipo===t)).length;
     const vencidos=ddocs.filter(d=>d.vencimento&&dias(d.vencimento)<=0).length;
     const criticos=ddocs.filter(d=>d.vencimento&&dias(d.vencimento)>0&&dias(d.vencimento)<=15).length;
-    html+=`<div style="padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:9px;background:var(--c3);flex-wrap:wrap">
+    const docsFaltando=TIPOS_DOC_BASE.filter(t=>!ddocs.some(d=>d.tipo===t)).length;
+    html+=`<div style="padding:11px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:9px;background:var(--c3);flex-wrap:wrap;position:sticky;top:${Object.keys(_docsSel).length?'44px':'0'};z-index:5">
       <div class="av" style="width:26px;height:26px;background:${acor(emp?emp.raz:'')};font-size:9px">${ini(en)}</div>
       <div style="font-weight:600;font-size:13px">${en}</div>
       <span style="font-size:11px;color:var(--t2)">${ddocs.length} doc(s)</span>
@@ -2023,17 +2116,29 @@ function rDocs(){
       ${criticos>0?`<span style="font-size:10.5px;color:var(--go2);font-weight:600">${criticos} crítico(s)</span>`:''}
       ${docsFaltando>0?`<button class="bt bt-outline bt-xs" style="color:var(--go2);border-color:var(--go2)" onclick="adicionarBaseEmpresa('${eid}')">⊕ Base (${docsFaltando})</button>`:''}
       <div style="margin-left:auto;display:flex;gap:5px">
-        <button class="bt bt-outline bt-xs" onclick="exportChecklistEmp('${eid}')" title="Baixar checklist desta empresa">⬇ Checklist</button>
         <button class="bt bt-p bt-xs" onclick="omDoc(null,'${eid}')">+ Doc</button>
       </div>
     </div>`;
+    // Instrução de seleção
+    html+=`<div style="padding:6px 16px;font-size:10.5px;color:var(--t3);background:var(--bd2)">☑ Clique no documento para selecioná-lo. Selecione mais de um para baixar como checklist.</div>`;
     ddocs.forEach(d=>{
       const dv=dias(d.vencimento);let st,scl;
-      if(!d.vencimento){st='Sem venc.';scl='pl-aq';}else if(dv<=0){st='VENCIDO';scl='pl-dv';}else if(dv<=15){st=dv+'d crítico';scl='pl-dv';}else if(dv<=30){st=dv+'d atenção';scl='pl-ag';}else{st=dv+'d OK';scl='pl-at';}
-      const drv=d.drv?`<a href="${d.drv}" target="_blank" class="drive-link">📄 Abrir no Drive</a>`:(driveReady?`<button class="bt bt-drive bt-xs" onclick="omUploadDoc('${d.id}')">⬆ Upload</button>`:`<span style="color:var(--t3);font-size:10.5px">Sem arquivo</span>`);
-      const isEmpty = d.baseAuto && !d.vencimento && !d.drv;
-      const rowBg = isEmpty ? 'background:rgba(245,158,11,.04)' : '';
-      html+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--bd2);font-size:12px;${rowBg}"><div style="flex:2;font-weight:500">${d.tipo}${isEmpty?'<span style="font-size:9px;color:var(--go2);margin-left:6px;font-weight:700">PENDENTE</span>':''}</div><div style="flex:1;color:var(--t2)">${d.municipio||'—'}</div><div style="flex:1">${fmtD(d.vencimento)||'—'}</div><div style="flex:1"><span class="pl ${scl}">${st}</span></div><div>${drv}</div><div style="display:flex;gap:4px">${isEmpty?`<button class="bt bt-p bt-xs" onclick="omDoc('${d.id}')">✏ Preencher</button>`:`<button class="bt bt-g bt-xs" onclick="omDoc('${d.id}')">✏</button>`}<button class="bt bt-d bt-xs" onclick="delDoc('${d.id}')">🗑</button></div></div>`;
+      if(!d.vencimento){st='Não vence';scl='pl-aq';}else if(dv<=0){st='VENCIDO';scl='pl-dv';}else if(dv<=15){st=dv+'d crítico';scl='pl-dv';}else if(dv<=30){st=dv+'d atenção';scl='pl-ag';}else{st=dv+'d OK';scl='pl-at';}
+      const drv=d.drv?`<a href="${d.drv}" target="_blank" class="drive-link" onclick="event.stopPropagation()">📄 Drive</a>`:(driveReady?`<button class="bt bt-drive bt-xs" onclick="event.stopPropagation();omUploadDoc('${d.id}')">⬆ Upload</button>`:`<span style="color:var(--t3);font-size:10.5px">Sem arquivo</span>`);
+      const sel=_docsSel[d.id]?'doc-sel':'';
+      html+=`<div class="doc-row ${sel}" style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--bd2);font-size:12px;cursor:pointer;transition:background .12s" onclick="toggleDocSel('${d.id}',this)">
+        <div style="width:16px;height:16px;border:1.5px solid var(--gc);border-radius:3px;flex-shrink:0;background:${_docsSel[d.id]?'var(--gc)':'transparent'};display:flex;align-items:center;justify-content:center">
+          ${_docsSel[d.id]?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}
+        </div>
+        <div style="flex:2;font-weight:500">${d.tipo}${!d.vencimento&&!d.drv?'<span style="font-size:9px;color:var(--go2);margin-left:6px;font-weight:700">PENDENTE</span>':''}</div>
+        <div style="flex:1">${fmtD(d.vencimento)||'—'}</div>
+        <div style="flex:1"><span class="pl ${scl}">${st}</span></div>
+        <div onclick="event.stopPropagation()">${drv}</div>
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="bt bt-g bt-xs" onclick="omDoc('${d.id}')">✏</button>
+          <button class="bt bt-d bt-xs" onclick="delDoc('${d.id}')">🗑</button>
+        </div>
+      </div>`;
     });
   });
   document.getElementById('t-docs').innerHTML=html;
@@ -2049,8 +2154,11 @@ function omDoc(id,empId){
     <input type="hidden" id="dc-drv-val" value="">
     <div class="fr"><div class="fg"><label>Empresa</label><select class="fs" id="dc-emp"></select></div>
     <div class="fg"><label>Tipo de Documento</label><select class="fs" id="dc-tipo">${tiposDoc.map(t=>`<option>${t}</option>`).join('')}</select></div></div>
-    <div class="fr"><div class="fg"><label>Município (se aplicável)</label><input class="fi" id="dc-mun" placeholder="Ex: Campinas – SP"></div>
-    <div class="fg"><label>Data de Vencimento</label><input class="fi" type="date" id="dc-ven"></div></div>
+    <div class="fr"><div class="fg"><label>Data de Emissão</label><input class="fi" type="date" id="dc-emi"></div>
+    <div class="fg"><label>Data de Vencimento</label><input class="fi" type="date" id="dc-ven" ${id&&docs.find(x=>x.id===id)?.naovence?'disabled':''}>
+    <label style="display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;cursor:pointer"><input type="checkbox" id="dc-naovence" onchange="document.getElementById('dc-ven').disabled=this.checked;if(this.checked)document.getElementById('dc-ven').value=''"> Não vence</label>
+    </div></div>
+    <div class="fr"><div class="fg"><label>Responsável pelo envio</label><input class="fi" id="dc-resp" placeholder="Nome do responsável"></div></div>
 
     <div class="fg" style="margin-bottom:10px">
       <label>Arquivo do Documento</label>
@@ -2139,10 +2247,22 @@ async function uploadExistDoc(inp,docId){
 function salvarDoc(){
   const id=gv('dc-id')||uid();
   const drv=document.getElementById('dc-drv-val')?.value||gv('dc-drv')||'';
-  const d={id,empresa:gv('dc-emp'),tipo:gv('dc-tipo'),municipio:gv('dc-mun'),vencimento:gv('dc-ven'),drv,obs:gv('dc-obs')};
+  const naovence=document.getElementById('dc-naovence')?.checked||false;
+  const d={id,empresa:gv('dc-emp'),tipo:gv('dc-tipo'),emissao:gv('dc-emi'),vencimento:naovence?'':gv('dc-ven'),naovence,resp:gv('dc-resp'),drv,obs:gv('dc-obs'),atualizadoEm:Date.now()};
   const idx=docs.findIndex(x=>x.id===id);
-  if(idx>-1)docs[idx]=d;else docs.push(d);
-  sv(K.docs,docs);cm('mo-doc');rDocs();rDash();updBadges();notify('Documento salvo!');
+  if(idx>-1){
+    // Controle de versão: arquiva a versão anterior (histórico 12 meses)
+    const ant=docs[idx];
+    if(ant.drv&&ant.drv!==drv&&drv){
+      if(!d.historico)d.historico=ant.historico||[];
+      d.historico.push({drv:ant.drv,emissao:ant.emissao,vencimento:ant.vencimento,arquivadoEm:Date.now()});
+      // Limpa histórico > 12 meses
+      const limite=Date.now()-365*24*60*60*1000;
+      d.historico=d.historico.filter(h=>h.arquivadoEm>limite);
+    }else{d.historico=ant.historico||[];}
+    docs[idx]=d;
+  }else docs.push(d);
+  sv(K.docs,docs);cm('mo-doc');rDocs();rDash();updBadges();notify('Documento salvo!'+(idx>-1&&d.historico?.length?' Versão anterior arquivada.':''));
 }
 function delDoc(id){if(!confirm('Excluir?'))return;docs=docs.filter(x=>x.id!==id);sv(K.docs,docs);rDocs();rDash();updBadges();}
 
@@ -2179,7 +2299,10 @@ function selM(id){
     ${m.obs?`<div style="background:var(--c2);border-radius:7px;padding:10px 13px;margin-bottom:12px;font-size:12px;color:var(--t2)">${m.obs}</div>`:''}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="font-family:Syne,sans-serif;font-size:13px;font-weight:700">Histórico (${hist.length})</div>
-      <button class="bt bt-p bt-sm" onclick="omInt('${m.id}')">+ Registrar</button>
+      <div style="display:flex;gap:6px">
+        <button class="bt bt-gold bt-sm" onclick="omContato('${m.id}')">📞 Registrar Contato</button>
+        <button class="bt bt-p bt-sm" onclick="omInt('${m.id}')">+ Registrar</button>
+      </div>
     </div>
     ${hist.length?hist.map(h=>`<div class="hi"><div style="font-size:10px;color:var(--t3);display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:rgba(37,99,235,.12);color:var(--a2)">${tipIc[h.tip]} ${tipNm[h.tip]||h.tip}</span>${fmtD(h.dat)}${h.com?' · <strong style="color:var(--te)">'+h.com+'</strong>':''}${h.fup?`<span style="color:var(--go2)">📅 Follow-up: ${fmtD(h.fup)}</span>`:''}</div><div style="font-size:12px;margin-top:3px">${h.obs||'—'}</div></div>`).join(''):`<div style="color:var(--t3);font-size:12px;padding:8px">Nenhuma interação.</div>`}
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"><button class="bt bt-d bt-sm" onclick="delMuni('${m.id}')">🗑 Excluir</button></div>`;
@@ -2383,15 +2506,319 @@ function delPortal(id){if(!confirm('Remover?'))return;portais=portais.filter(x=>
 // RELATÓRIOS
 // ══════════════════════════════════════════════
 function rRel(){pSel('rel-emp',emps,'id',e=>e.fan||e.raz,'');}
+// ══ TIMBRADO WORD (Padrão Ressonar) ══
+function timbradoHTML(emp){
+  const e=emp||{};
+  return `<table style="width:100%;border-collapse:collapse"><tr><td style="background:#1F3864;color:#fff;text-align:center;padding:14px 20px;font-family:Arial">
+    <div style="font-size:15pt;font-weight:bold">${e.raz||e.fan||'EMPRESA'}</div>
+    <div style="font-size:9pt;margin-top:4px">CNPJ: ${e.cnp||'—'}${e.im?' | Inscrição Municipal: '+e.im:''}</div>
+    <div style="font-size:9pt">${e.end||e.cid||''}</div>
+    <div style="font-size:9pt">${e.tel?'Tel: '+e.tel:''}${e.ema?' | E-mail: '+e.ema:''}</div>
+  </td></tr></table>
+  <div style="border-bottom:3px solid #C9A84C;margin:0 0 16px 0"></div>`;
+}
+function baixarWord(html,nome){
+  const full=`<html><head><meta charset="UTF-8"><style>body{font-family:Arial;font-size:11pt;margin:1.5cm;line-height:1.5;color:#1a1a1a}h1{color:#1F3864;font-size:13pt;text-align:center}h2{color:#1F3864;font-size:11pt;border-bottom:2px solid #C9A84C;padding-bottom:4px;margin-top:18px}table.dados{width:100%;border-collapse:collapse;margin:10px 0}table.dados th{background:#1F3864;color:#fff;padding:6px 8px;font-size:9pt;text-align:left}table.dados td{padding:5px 8px;border-bottom:1px solid #ddd;font-size:9pt}table.dados tr:nth-child(even){background:#f5f7fa}.kpi{display:inline-block;background:#F2F4F7;padding:10px 18px;margin:4px;text-align:center;border-radius:4px}.kpi b{display:block;font-size:20pt;color:#1F3864}.kpi span{font-size:8pt;color:#666}.alerta{background:#FDF3F3;border-left:5px solid #E24B4A;padding:10px 14px;margin:10px 0}.alerta b{color:#A32D2D}.rodape{background:#1F3864;color:#fff;text-align:center;font-size:8pt;padding:6px;margin-top:30px}</style></head><body>${html}<div class="rodape">BGC Consultoria — Inteligência Comercial Estratégica | Cardoso Oliveira Consultoria</div></body></html>`;
+  const blob=new Blob([full],{type:'application/msword'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=nome+'.doc';a.click();
+  notify('✅ '+nome+' baixado em Word!');
+}
+
 function gerarRel(tipo){
   const empF=gv('rel-emp'),empSel=empF?emps.find(e=>e.id===empF):null;
   const pF=proc.filter(p=>!empF||p.empresa===empF),dF=docs.filter(d=>!empF||d.empresa===empF);
+  const cF=contatos.filter(c=>!empF||c.empresa===empF);
   const hoje=new Date().toISOString().split('T')[0];
   const per={mes:'Mês atual',trim:'Trimestre',sem:'Semestre',ano:'Ano'}[gv('rel-per')]||'';
-  let html=`<div class="cd"><div class="ch"><div><div class="ct2">Relatório ${tipo==='sintetico'?'Sintético':tipo==='analitico'?'Analítico':tipo==='contratos'?'Contratos':'Parcerias'}</div><div class="cs">${empSel?empSel.fan||empSel.raz:'Todas as empresas'} · ${per} · ${fmtD(hoje)}</div></div><button class="bt bt-g bt-sm" onclick="window.print()">🖨 PDF</button></div>`;
-  if(tipo==='sintetico'){const at=pF.filter(p=>p.fase==='Contrato Ativo').length,and=pF.filter(p=>!['Arquivado','Contrato Ativo'].includes(p.fase)).length,crit=dF.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;html+=`<div class="g3" style="margin-bottom:14px"><div class="ib"><div class="il">Contratos Ativos</div><div class="iv" style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--go2)">${at}</div></div><div class="ib"><div class="il">Em Andamento</div><div class="iv" style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--a2)">${and}</div></div><div class="ib"><div class="il">Docs Críticos</div><div class="iv" style="font-family:Syne,sans-serif;font-size:22px;font-weight:800;color:var(--re2)">${crit}</div></div></div><p style="font-size:12px;color:var(--t2);line-height:1.9">A BGC gerenciou <strong style="color:var(--te)">${pF.length} processo(s)</strong> com <strong style="color:var(--te)">${at}</strong> contrato(s) ativo(s) e <strong style="color:var(--te)">${and}</strong> em andamento. ${crit>0?`<strong style="color:var(--re2)">${crit} doc(s)</strong> requerem renovação urgente.`:'Documentação regularizada.'}</p>`;}
-  else{const ls=tipo==='parcerias'?parc.filter(p=>!empF||(p.empresas||[]).includes(empF)):pF;html+=`<div class="tw"><table><thead><tr>${tipo==='parcerias'?'<th>Município</th><th>Tipo</th><th>Pagamento</th><th>Exclusividade</th><th>Desconto</th><th>Status</th>':'<th>Empresa</th><th>Município</th><th>Especialidade</th><th>Fase</th><th>Valor</th><th>Vencimento</th>'}</tr></thead><tbody>${ls.map(p=>{if(tipo==='parcerias'){const mun=munis.find(m=>m.id===p.municipio);return`<tr><td>${mun?mun.nome+' – '+mun.uf:'—'}</td><td>${p.tipo||'—'}</td><td>${p.pagamento||'—'}</td><td>${p.exclusividade?'Sim':'Não'}</td><td>${p.desconto?p.desconto+'%':'—'}</td><td>${p.status||'—'}</td></tr>`;}const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome+' – '+m.uf:'—'}</td><td>${p.esp||'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`;}
+  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias'}[tipo];
+  const at=pF.filter(p=>p.fase==='Contrato Ativo').length;
+  const and=pF.filter(p=>!['Arquivado','Contrato Ativo'].includes(p.fase)).length;
+  const crit=dF.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
+  const lig=cF.filter(c=>c.tipo==='ligacao').length,vis=cF.filter(c=>c.tipo==='visita').length;
+  const fatTotal=pF.filter(p=>p.fase==='Contrato Ativo').reduce((s,p)=>s+(parseFloat(p.val)||0),0);
+
+  // Tela
+  let html=`<div class="cd"><div class="ch"><div><div class="ct2">Relatório ${nomeRel}</div><div class="cs">${empSel?empSel.fan||empSel.raz:'Todas as empresas'} · ${per} · ${fmtD(hoje)}</div></div><button class="bt bt-gold bt-sm" onclick="baixarRelWord('${tipo}')">⬇ Baixar Word</button></div>`;
+
+  if(tipo==='executivo'){
+    html+=`<div class="g3" style="margin-bottom:14px">
+      <div class="ib"><div class="il">Contratos Ativos</div><div class="iv" style="color:var(--go2)">${at}</div></div>
+      <div class="ib"><div class="il">Faturamento Estimado</div><div class="iv" style="color:var(--gr2);font-size:16px">${fmtV(fatTotal)}</div></div>
+      <div class="ib"><div class="il">Em Andamento</div><div class="iv" style="color:var(--a2)">${and}</div></div>
+    </div>
+    <p style="font-size:12px;color:var(--t2);line-height:1.9"><strong>Conclusão:</strong> pipeline com ${pF.length} processo(s), ${at} ativo(s). ${crit>0?`<strong style="color:var(--re2)">Atenção:</strong> ${crit} documento(s) críticos requerem intervenção.`:'Operação regularizada.'}</p>`;
+  }
+  else if(tipo==='sintetico'){
+    html+=`<div class="g3" style="margin-bottom:14px">
+      <div class="ib"><div class="il">Contratos Ativos</div><div class="iv" style="color:var(--go2)">${at}</div></div>
+      <div class="ib"><div class="il">Em Andamento</div><div class="iv" style="color:var(--a2)">${and}</div></div>
+      <div class="ib"><div class="il">Docs Críticos</div><div class="iv" style="color:var(--re2)">${crit}</div></div>
+    </div>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="ib"><div class="il">Ligações</div><div class="iv">${lig}</div></div>
+      <div class="ib"><div class="il">Visitas</div><div class="iv">${vis}</div></div>
+      <div class="ib"><div class="il">Parcerias</div><div class="iv">${parc.length}</div></div>
+    </div>
+    <p style="font-size:12px;color:var(--t2);line-height:1.9">A BGC gerenciou <strong style="color:var(--te)">${pF.length} processo(s)</strong> com <strong style="color:var(--te)">${at}</strong> ativo(s). ${crit>0?`<strong style="color:var(--re2)">${crit} doc(s)</strong> requerem renovação urgente.`:'Documentação regularizada.'}</p>`;
+  }
+  else if(tipo==='analitico'){
+    html+=`<div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📞 RELACIONAMENTO (${cF.length} contato(s))</div>
+    <div class="tw" style="margin-bottom:14px"><table><thead><tr><th>Data</th><th>Tipo</th><th>Município</th><th>Responsável</th><th>Resumo</th><th>Próximo Passo</th></tr></thead><tbody>${cF.slice(0,30).map(c=>{const m=munis.find(x=>x.id===c.municipio);return`<tr><td>${fmtD(c.data)} ${c.hora||''}</td><td>${{ligacao:'📞 Ligação',visita:'🚗 Visita',reuniao:'👥 Reunião'}[c.tipo]||c.tipo}</td><td>${m?m.nome:'—'}</td><td>${c.resp||'—'}</td><td style="font-size:10.5px">${c.resumo||'—'}</td><td style="font-size:10.5px">${c.proximo||'—'}</td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--t3)">Nenhum contato registrado</td></tr>'}</tbody></table></div>
+    <div style="font-size:12px;font-weight:600;color:var(--g2);margin-bottom:8px">📋 PROCESSOS</div>
+    <div class="tw"><table><thead><tr><th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th></tr></thead><tbody>${pF.map(p=>{const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome:'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`;
+  }
+  else{const ls=tipo==='parcerias'?parc.filter(p=>!empF||(p.empresas||[]).includes(empF)):pF;html+=`<div class="tw"><table><thead><tr>${tipo==='parcerias'?'<th>Município</th><th>Tipo</th><th>Pagamento</th><th>Status</th>':'<th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th>'}</tr></thead><tbody>${ls.map(p=>{if(tipo==='parcerias'){const mun=munis.find(m=>m.id===p.municipio);return`<tr><td>${mun?mun.nome+' – '+mun.uf:'—'}</td><td>${p.tipo||'—'}</td><td>${p.pagamento||'—'}</td><td>${p.status||'—'}</td></tr>`;}const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome+' – '+m.uf:'—'}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)}</td></tr>`;}).join('')}</tbody></table></div>`;}
   html+='</div>';document.getElementById('rel-ct').innerHTML=html;
+}
+
+function baixarRelWord(tipo){
+  const empF=gv('rel-emp'),empSel=empF?emps.find(e=>e.id===empF):null;
+  const pF=proc.filter(p=>!empF||p.empresa===empF),dF=docs.filter(d=>!empF||d.empresa===empF);
+  const cF=contatos.filter(c=>!empF||c.empresa===empF);
+  const per={mes:'Mês atual',trim:'Trimestre',sem:'Semestre',ano:'Ano'}[gv('rel-per')]||'';
+  const nomeRel={executivo:'Executivo',sintetico:'Sintético',analitico:'Analítico',contratos:'Contratos',parcerias:'Parcerias'}[tipo];
+  const at=pF.filter(p=>p.fase==='Contrato Ativo').length;
+  const and=pF.filter(p=>!['Arquivado','Contrato Ativo'].includes(p.fase)).length;
+  const crit=dF.filter(d=>dias(d.vencimento)<=15&&dias(d.vencimento)>0).length;
+  const lig=cF.filter(c=>c.tipo==='ligacao').length,vis=cF.filter(c=>c.tipo==='visita').length;
+  const fatTotal=pF.filter(p=>p.fase==='Contrato Ativo').reduce((s,p)=>s+(parseFloat(p.val)||0),0);
+  const timbrado=empSel?timbradoHTML(empSel):timbradoHTML({raz:'BGC CONSULTORIA',cnp:'—',end:'Janaúba/MG',tel:'',ema:'cardosooliveiraconsultoria@gmail.com'});
+
+  let corpo=`${timbrado}<h1>RELATÓRIO ${nomeRel.toUpperCase()} — GESTÃO COMERCIAL</h1>
+  <p style="text-align:center;color:#666;font-size:9pt">Período: ${per} | Gerado em: ${new Date().toLocaleDateString('pt-BR')} | BGC Consultoria</p>`;
+
+  const kpis=`<div style="text-align:center;margin:14px 0">
+    <span class="kpi"><b>${at}</b><span>CONTRATOS ATIVOS</span></span>
+    <span class="kpi"><b>${and}</b><span>EM ANDAMENTO</span></span>
+    <span class="kpi"><b>${lig}</b><span>LIGAÇÕES</span></span>
+    <span class="kpi"><b>${vis}</b><span>VISITAS</span></span>
+  </div>`;
+
+  const intervencao=crit>0?`<div class="alerta"><b>⚠ ${crit} documento(s) crítico(s) — vencem em até 15 dias</b><br><b style="color:#1F3864">PROPOSTA DE INTERVENÇÃO:</b> Priorizar renovação imediata das certidões críticas. Acionar responsáveis pelo envio cadastrados no sistema.</div>`:'';
+
+  if(tipo==='executivo'){
+    corpo+=`<h2>1. INDICADORES ESTRATÉGICOS</h2>${kpis}
+    <h2>2. EVOLUÇÃO</h2><p>Faturamento estimado dos contratos ativos: <strong>${fmtV(fatTotal)}</strong>. Pipeline total de ${pF.length} processo(s).</p>
+    <h2>3. CONCLUSÕES</h2><p>${at>0?`Operação com ${at} contrato(s) gerando receita.`:'Nenhum contrato ativo no período.'} ${and>0?`${and} processo(s) em negociação com potencial de conversão.`:''}</p>
+    ${intervencao?'<h2>4. PROPOSTA DE INTERVENÇÃO</h2>'+intervencao:''}`;
+  }
+  else if(tipo==='sintetico'){
+    corpo+=`<h2>1. INDICADORES GERAIS</h2>${kpis}
+    <h2>2. FATURAMENTO</h2><p>Faturamento estimado (contratos ativos): <strong>${fmtV(fatTotal)}</strong></p>
+    <h2>3. PARCERIAS E CONTRATOS</h2><p>${at} contrato(s) ativo(s), ${parc.length} parceria(s) cadastrada(s), ${and} processo(s) em andamento.</p>
+    ${intervencao?'<h2>4. INDICADOR ABAIXO DA META</h2>'+intervencao:''}`;
+  }
+  else if(tipo==='analitico'){
+    corpo+=`<h2>1. RELACIONAMENTO — ${cF.length} CONTATO(S)</h2>
+    <table class="dados"><tr><th>Data</th><th>Hora</th><th>Tipo</th><th>Município</th><th>Responsável</th><th>Descrição</th><th>Pendências</th><th>Próximos Passos</th></tr>
+    ${cF.map(c=>{const m=munis.find(x=>x.id===c.municipio);return`<tr><td>${fmtD(c.data)}</td><td>${c.hora||'—'}</td><td>${{ligacao:'Ligação',visita:'Visita',reuniao:'Reunião'}[c.tipo]||c.tipo}</td><td>${m?m.nome:'—'}</td><td>${c.resp||'—'}</td><td>${c.resumo||'—'}</td><td>${c.pend||'—'}</td><td>${c.proximo||'—'}</td></tr>`;}).join('')||'<tr><td colspan="8">Nenhum contato registrado</td></tr>'}</table>
+    <h2>2. FINANCEIRO</h2>
+    <table class="dados"><tr><th>Empresa</th><th>Município</th><th>Valor Contrato</th><th>Fase</th></tr>
+    ${pF.map(p=>{const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome:'—'}</td><td>${fmtV(p.val)}</td><td>${p.fase}</td></tr>`;}).join('')}</table>
+    <h2>3. GESTÃO DE PROCESSOS</h2>
+    <table class="dados"><tr><th>Nº Processo</th><th>Empresa</th><th>Fase Atual</th><th>Início</th><th>Vencimento</th><th>Observações</th></tr>
+    ${pF.map(p=>{const e=emps.find(x=>x.id===p.empresa);return`<tr><td>${p.num||'—'}</td><td>${e?e.fan||e.raz:'—'}</td><td>${p.fase}</td><td>${fmtD(p.ini)||'—'}</td><td>${fmtD(p.fim)||'—'}</td><td>${p.obs||'—'}</td></tr>`;}).join('')}</table>`;
+  }
+  else{const ls=tipo==='parcerias'?parc:pF;
+    corpo+=`<h2>${nomeRel.toUpperCase()}</h2><table class="dados"><tr>${tipo==='parcerias'?'<th>Município</th><th>Tipo</th><th>Status</th>':'<th>Empresa</th><th>Município</th><th>Fase</th><th>Valor</th><th>Vencimento</th>'}</tr>${ls.map(p=>{if(tipo==='parcerias'){const mun=munis.find(m=>m.id===p.municipio);return`<tr><td>${mun?mun.nome:'—'}</td><td>${p.tipo||'—'}</td><td>${p.status||'—'}</td></tr>`;}const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);return`<tr><td>${e?e.fan||e.raz:'—'}</td><td>${m?m.nome:'—'}</td><td>${p.fase}</td><td>${fmtV(p.val)}</td><td>${fmtD(p.fim)||'—'}</td></tr>`;}).join('')}</table>`;}
+
+  baixarWord(corpo,`Relatorio_${nomeRel}_${new Date().toISOString().split('T')[0]}`);
+}
+
+// ══════════════════════════════════════════════
+// AGENDA
+// ══════════════════════════════════════════════
+function rAgenda(){
+  const filtro=gv('ag-filtro'),periodo=gv('ag-periodo')||'30';
+  const hoje=new Date();
+  // Eventos manuais + vencimentos de docs + renovações de contratos
+  let eventos=[...agenda];
+  docs.forEach(d=>{if(d.vencimento&&!d.naovence){const e=emps.find(x=>x.id===d.empresa);eventos.push({id:'doc_'+d.id,tipo:'venc',data:d.vencimento,titulo:`Vence: ${d.tipo}`,desc:e?e.fan||e.raz:'',auto:true});}});
+  proc.forEach(p=>{if(p.fim){const e=emps.find(x=>x.id===p.empresa),m=munis.find(x=>x.id===p.municipio);eventos.push({id:'proc_'+p.id,tipo:'renov',data:p.fim,titulo:`Renovação: ${p.num||'Contrato'}`,desc:`${e?e.fan||e.raz:''} — ${m?m.nome:''}`,auto:true});}});
+  // Filtrar
+  eventos=eventos.filter(ev=>{
+    if(filtro&&ev.tipo!==filtro)return false;
+    if(periodo!=='all'){const d=new Date(ev.data),diff=(d-hoje)/(1000*60*60*24);if(diff<-1||diff>parseInt(periodo))return false;}
+    return true;
+  }).sort((a,b)=>new Date(a.data)-new Date(b.data));
+  const icones={prazo:'⏰',venc:'📁',renov:'🔄',visita:'🚗',outro:'📌'};
+  const cores={prazo:'var(--go2)',venc:'var(--re2)',renov:'var(--a2)',visita:'var(--gr2)',outro:'var(--t2)'};
+  if(!eventos.length){document.getElementById('ag-ct').innerHTML=`<div class="em"><div class="em-ic">📅</div><div class="em-t">Nenhum compromisso no período</div><div class="em-s">Clique em "+ Novo Evento" para agendar</div></div>`;return;}
+  // Agrupar por data
+  const porData={};eventos.forEach(ev=>{if(!porData[ev.data])porData[ev.data]=[];porData[ev.data].push(ev);});
+  let html='';
+  Object.entries(porData).forEach(([data,evs])=>{
+    const d=new Date(data+'T12:00'),dd=dias(data);
+    const urg=dd<=3?'var(--re2)':dd<=7?'var(--go2)':'var(--t2)';
+    html+=`<div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-weight:700;font-size:13px;color:${urg}">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'})}</span>
+        <span style="font-size:10.5px;color:${urg}">${dd===0?'HOJE':dd===1?'AMANHÃ':dd<0?'ATRASADO':'em '+dd+' dia(s)'}</span>
+      </div>
+      ${evs.map(ev=>`<div class="cd" style="padding:10px 14px;margin-bottom:5px;display:flex;align-items:center;gap:10px;border-left:3px solid ${cores[ev.tipo]}">
+        <span style="font-size:16px">${icones[ev.tipo]||'📌'}</span>
+        <div style="flex:1"><div style="font-size:12.5px;font-weight:600">${ev.titulo}</div>${ev.desc?`<div style="font-size:10.5px;color:var(--t2)">${ev.desc}</div>`:''}${ev.hora?`<div style="font-size:10px;color:var(--t3)">🕐 ${ev.hora}</div>`:''}</div>
+        ${ev.gcal?`<a href="${ev.gcal}" target="_blank" class="bt bt-outline bt-xs">📅 GCal</a>`:!ev.auto?`<button class="bt bt-outline bt-xs" onclick="addGCal('${ev.id}')">+ GCal</button>`:''}
+        ${!ev.auto?`<button class="bt bt-d bt-xs" onclick="delEvento('${ev.id}')">🗑</button>`:''}
+      </div>`).join('')}
+    </div>`;
+  });
+  document.getElementById('ag-ct').innerHTML=html;
+  // Badge
+  const urgentes=eventos.filter(ev=>dias(ev.data)<=7&&dias(ev.data)>=0).length;
+  const nb=document.getElementById('nb-ag');if(nb){nb.textContent=urgentes;nb.style.display=urgentes>0?'inline-flex':'none';}
+}
+function omEvento(){
+  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-ev"><div class="mb">
+    <div class="mt"><span>Novo Evento</span><span class="mx" onclick="cm('mo-ev')">✕</span></div>
+    <div class="fr"><div class="fg"><label>Tipo</label><select class="fs" id="ev-tipo">
+      <option value="prazo">⏰ Prazo de proposta</option><option value="visita">🚗 Visita agendada</option>
+      <option value="renov">🔄 Renovação</option><option value="outro">📌 Outro</option></select></div>
+    <div class="fg"><label>Data</label><input class="fi" type="date" id="ev-data"></div></div>
+    <div class="fr"><div class="fg"><label>Hora (opcional)</label><input class="fi" type="time" id="ev-hora"></div>
+    <div class="fg"><label>Título</label><input class="fi" id="ev-tit" placeholder="Ex: Prazo edital Mamonas"></div></div>
+    <div class="fr f1"><div class="fg"><label>Descrição</label><textarea class="fta" id="ev-desc"></textarea></div></div>
+    <div class="mf"><button class="bt bt-g" onclick="cm('mo-ev')">Cancelar</button><button class="bt bt-p" onclick="salvarEvento()">💾 Salvar</button></div>
+  </div></div>`;
+}
+function salvarEvento(){
+  const ev={id:uid(),tipo:gv('ev-tipo'),data:gv('ev-data'),hora:gv('ev-hora'),titulo:gv('ev-tit'),desc:gv('ev-desc')};
+  if(!ev.data||!ev.titulo){notify('Preencha data e título','e');return;}
+  agenda.push(ev);sv(K.agenda,agenda);cm('mo-ev');rAgenda();notify('Evento salvo!');
+}
+function delEvento(id){agenda=agenda.filter(e=>e.id!==id);sv(K.agenda,agenda);rAgenda();}
+function addGCal(id){
+  const ev=agenda.find(e=>e.id===id);if(!ev)return;
+  const dt=ev.data.replace(/-/g,'')+(ev.hora?'T'+ev.hora.replace(':','')+'00':'');
+  const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.titulo)}&dates=${dt}/${dt}&details=${encodeURIComponent(ev.desc||'BGC Consultoria')}`;
+  window.open(url,'_blank');
+  ev.gcal=url;sv(K.agenda,agenda);rAgenda();
+}
+
+// ══════════════════════════════════════════════
+// CRM — REGISTRO DE CONTATOS
+// ══════════════════════════════════════════════
+function omContato(munId){
+  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-ctt"><div class="mb">
+    <div class="mt"><span>📞 Registrar Contato</span><span class="mx" onclick="cm('mo-ctt')">✕</span></div>
+    <input type="hidden" id="ct-mun" value="${munId||''}">
+    <div class="fr"><div class="fg"><label>Tipo</label><select class="fs" id="ct-tipo">
+      <option value="ligacao">📞 Ligação</option><option value="visita">🚗 Visita</option><option value="reuniao">👥 Reunião</option></select></div>
+    <div class="fg"><label>Empresa (cliente)</label><select class="fs" id="ct-emp"></select></div></div>
+    <div class="fr"><div class="fg"><label>Data</label><input class="fi" type="date" id="ct-data" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="fg"><label>Hora</label><input class="fi" type="time" id="ct-hora" value="${new Date().toTimeString().slice(0,5)}"></div></div>
+    <div class="fr"><div class="fg"><label>Responsável</label><input class="fi" id="ct-resp" placeholder="Quem fez o contato"></div>
+    <div class="fg"><label>Contato realizado com</label><input class="fi" id="ct-com" placeholder="Nome da pessoa contatada"></div></div>
+    <div class="fr f1"><div class="fg"><label>Descrição completa</label><textarea class="fta" id="ct-resumo" placeholder="O que foi tratado na ligação/visita/reunião"></textarea></div></div>
+    <div class="fr"><div class="fg"><label>Pendências</label><input class="fi" id="ct-pend"></div>
+    <div class="fg"><label>Próximos passos</label><input class="fi" id="ct-prox"></div></div>
+    <div class="mf"><button class="bt bt-g" onclick="cm('mo-ctt')">Cancelar</button><button class="bt bt-p" onclick="salvarContato()">💾 Salvar</button></div>
+  </div></div>`;
+  pSel('ct-emp',emps,'id',e=>e.fan||e.raz,'');
+}
+function salvarContato(){
+  const c={id:uid(),municipio:gv('ct-mun'),tipo:gv('ct-tipo'),empresa:gv('ct-emp'),data:gv('ct-data'),hora:gv('ct-hora'),resp:gv('ct-resp'),com:gv('ct-com'),resumo:gv('ct-resumo'),pend:gv('ct-pend'),proximo:gv('ct-prox'),criadoEm:Date.now()};
+  if(!c.resumo){notify('Preencha a descrição','e');return;}
+  contatos.push(c);sv(K.contatos,contatos);
+  // Adiciona ao histórico do município também
+  const m=munis.find(x=>x.id===c.municipio);
+  if(m){if(!m.hist)m.hist=[];m.hist.push({dat:c.data,tip:c.tipo==='ligacao'?'lig':c.tipo==='visita'?'vis':'reu',txt:c.resumo});sv(K.munis,munis);}
+  cm('mo-ctt');notify('Contato registrado! Alimenta o relatório analítico automaticamente.');
+  if(typeof rMunis==='function')try{rMunis();}catch(e){}
+}
+
+// ══════════════════════════════════════════════
+// MODELOS DE DOCUMENTOS TIMBRADOS
+// ══════════════════════════════════════════════
+const MODELOS_DOC=[
+  {id:'vinculo',icone:'👩‍⚕️',nome:'Declaração de Vínculo Profissional',desc:'Declara que profissional integra o corpo clínico da empresa',campos:[{k:'prof',l:'Nome do Profissional'},{k:'crm',l:'CRM (nº/UF)'},{k:'esp',l:'Especialidade'}]},
+  {id:'credenciamento',icone:'📋',nome:'Carta de Credenciamento',desc:'Solicita credenciamento junto a órgão/consórcio',campos:[{k:'orgao',l:'Órgão/Consórcio destinatário'},{k:'edital',l:'Nº do Edital'},{k:'objeto',l:'Objeto do credenciamento'}]},
+  {id:'procuracao',icone:'⚖️',nome:'Procuração',desc:'Outorga poderes de representação',campos:[{k:'outorgado',l:'Nome do Outorgado'},{k:'cpfout',l:'CPF do Outorgado'},{k:'poderes',l:'Finalidade/Poderes'}]},
+  {id:'unificada',icone:'📑',nome:'Declaração Unificada',desc:'Reúne declarações padrão de licitação: menor, idoneidade, fatos impeditivos, ME/EPP',campos:[{k:'orgao',l:'Órgão licitante'},{k:'edital',l:'Nº do Edital/Processo'}]},
+];
+function rModelos(){
+  document.getElementById('mod-grid').innerHTML=MODELOS_DOC.map(m=>`
+    <div class="cd" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--gc)'" onmouseout="this.style.borderColor='var(--bd)'" onclick="omModelo('${m.id}')">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <span style="font-size:28px">${m.icone}</span>
+        <div style="font-weight:700;font-size:13.5px;color:var(--g2)">${m.nome}</div>
+      </div>
+      <div style="font-size:11.5px;color:var(--t2);line-height:1.6">${m.desc}</div>
+      <div style="margin-top:10px"><span class="pl pl-at">⬇ Word timbrado</span></div>
+    </div>`).join('');
+}
+function omModelo(modId){
+  const mod=MODELOS_DOC.find(m=>m.id===modId);if(!mod)return;
+  document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-mod"><div class="mb lg">
+    <div class="mt"><span>${mod.icone} ${mod.nome}</span><span class="mx" onclick="cm('mo-mod')">✕</span></div>
+    <div style="background:var(--al);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:9px 12px;font-size:11.5px;color:var(--a2);margin-bottom:14px">O documento será gerado em Word com o TIMBRADO da empresa selecionada (Padrão Ressonar)</div>
+    <input type="hidden" id="md-id" value="${modId}">
+    <div class="fr f1"><div class="fg"><label>Empresa (timbrado)</label><select class="fs" id="md-emp"></select></div></div>
+    ${mod.campos.map(c=>`<div class="fr f1"><div class="fg"><label>${c.l}</label><input class="fi" id="md-${c.k}"></div></div>`).join('')}
+    <div class="fr"><div class="fg"><label>Signatário (nome completo)</label><input class="fi" id="md-sig"></div>
+    <div class="fg"><label>CPF do signatário</label><input class="fi" id="md-sigcpf"></div></div>
+    <div class="fr"><div class="fg"><label>Cargo/Função</label><input class="fi" id="md-sigcargo" placeholder="Ex: Representante Legal"></div>
+    <div class="fg"><label>CRM/RG (se aplicável)</label><input class="fi" id="md-sigdoc"></div></div>
+    <div class="mf"><button class="bt bt-g" onclick="cm('mo-mod')">Cancelar</button><button class="bt bt-p" onclick="gerarModeloWord()">⬇ Gerar Word</button></div>
+  </div></div>`;
+  pSel('md-emp',emps,'id',e=>e.fan||e.raz,'');
+}
+function gerarModeloWord(){
+  const modId=gv('md-id'),mod=MODELOS_DOC.find(m=>m.id===modId);
+  const emp=emps.find(e=>e.id===gv('md-emp'));
+  if(!emp){notify('Selecione a empresa','e');return;}
+  const sig=gv('md-sig'),sigcpf=gv('md-sigcpf'),sigcargo=gv('md-sigcargo')||'Representante Legal',sigdoc=gv('md-sigdoc');
+  if(!sig||!sigcpf){notify('Preencha o signatário completo (nome + CPF)','e');return;}
+  const hoje=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const cidade=(emp.cid||'').split('/')[0]||'Janaúba';
+  const assinatura=`<div style="text-align:center;margin-top:70px">
+    <div>_________________________________________</div>
+    <div style="font-weight:bold;margin-top:6px">${sig}</div>
+    <div style="font-size:10pt">CPF: ${sigcpf}${sigdoc?' | '+sigdoc:''}</div>
+    <div style="font-size:10pt">${sigcargo}</div>
+  </div>`;
+  const localData=`<p style="text-align:right;margin-top:40px">${cidade}, ${hoje}.</p>`;
+  let corpo='';
+
+  if(modId==='vinculo'){
+    corpo=`<h1>DECLARAÇÃO DE VÍNCULO PROFISSIONAL</h1>
+    <p style="text-align:justify;line-height:1.8">A empresa <strong>${emp.raz||emp.fan}</strong>, inscrita no CNPJ sob o nº ${emp.cnp||'—'}, com sede em ${emp.end||emp.cid||'—'}, neste ato representada por seu(sua) ${sigcargo}, DECLARA, para os devidos fins, que o(a) profissional abaixo identificado(a) integra o corpo clínico desta empresa, mantendo vínculo profissional ativo:</p>
+    <p style="margin-left:30px"><strong>Profissional:</strong> ${gv('md-prof')||'—'}<br>
+    <strong>CRM:</strong> ${gv('md-crm')||'—'}<br>
+    <strong>Especialidade:</strong> ${gv('md-esp')||'—'}</p>
+    <p style="text-align:justify">Por ser expressão da verdade, firmo a presente declaração.</p>`;
+  }
+  else if(modId==='credenciamento'){
+    corpo=`<h1>CARTA DE CREDENCIAMENTO</h1>
+    <p>Ao<br><strong>${gv('md-orgao')||'—'}</strong><br>Ref.: Edital nº ${gv('md-edital')||'—'}</p>
+    <p style="text-align:justify;line-height:1.8">A empresa <strong>${emp.raz||emp.fan}</strong>, inscrita no CNPJ sob o nº ${emp.cnp||'—'}, com sede em ${emp.end||emp.cid||'—'}, vem, respeitosamente, por meio desta, manifestar interesse no credenciamento referente ao objeto: <strong>${gv('md-objeto')||'—'}</strong>, comprometendo-se a cumprir integralmente as exigências constantes do edital e seus anexos.</p>
+    <p style="text-align:justify">Declara, ainda, que os documentos de habilitação anexos são autênticos e refletem a atual situação jurídica, fiscal e técnica da empresa.</p>`;
+  }
+  else if(modId==='procuracao'){
+    corpo=`<h1>PROCURAÇÃO</h1>
+    <p style="text-align:justify;line-height:1.8"><strong>OUTORGANTE:</strong> ${emp.raz||emp.fan}, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${emp.cnp||'—'}, com sede em ${emp.end||emp.cid||'—'}, neste ato representada por seu(sua) ${sigcargo}, ${sig}, CPF ${sigcpf}.</p>
+    <p style="text-align:justify;line-height:1.8"><strong>OUTORGADO:</strong> ${gv('md-outorgado')||'—'}, CPF ${gv('md-cpfout')||'—'}.</p>
+    <p style="text-align:justify;line-height:1.8"><strong>PODERES:</strong> Pelo presente instrumento, a outorgante nomeia e constitui o outorgado seu bastante procurador para ${gv('md-poderes')||'representá-la em processos licitatórios e de credenciamento'}, podendo assinar documentos, apresentar propostas, interpor recursos e praticar todos os demais atos necessários ao fiel cumprimento deste mandato.</p>`;
+  }
+  else if(modId==='unificada'){
+    corpo=`<h1>DECLARAÇÃO UNIFICADA</h1>
+    <p>Ao ${gv('md-orgao')||'—'}<br>Ref.: ${gv('md-edital')||'—'}</p>
+    <p style="text-align:justify;line-height:1.8">A empresa <strong>${emp.raz||emp.fan}</strong>, CNPJ nº ${emp.cnp||'—'}, com sede em ${emp.end||emp.cid||'—'}, por intermédio de seu representante legal, DECLARA, sob as penas da lei:</p>
+    <p style="text-align:justify;line-height:1.9;margin-left:20px">
+    <strong>1)</strong> Que não emprega menor de 18 (dezoito) anos em trabalho noturno, perigoso ou insalubre e não emprega menor de 16 (dezesseis) anos, salvo na condição de aprendiz, a partir de 14 (quatorze) anos, nos termos do inciso XXXIII do art. 7º da Constituição Federal;<br><br>
+    <strong>2)</strong> Que inexistem fatos impeditivos para sua habilitação no presente processo, ciente da obrigatoriedade de declarar ocorrências posteriores;<br><br>
+    <strong>3)</strong> Que não foi declarada inidônea para licitar ou contratar com a Administração Pública, em qualquer de suas esferas;<br><br>
+    <strong>4)</strong> Que cumpre plenamente os requisitos de habilitação exigidos no edital;<br><br>
+    <strong>5)</strong> Que os documentos apresentados são autênticos e refletem a atual situação da empresa;<br><br>
+    <strong>6)</strong> Que tomou conhecimento de todas as condições do edital e seus anexos, aceitando-as integralmente.</p>
+    <p style="text-align:justify">Por ser expressão da verdade, firma a presente declaração.</p>`;
+  }
+
+  const html=timbradoHTML(emp)+corpo+localData+assinatura;
+  const nomeArq=`${mod.nome.replace(/\s+/g,'_')}_${(emp.fan||emp.raz||'').replace(/\s+/g,'_')}`;
+  baixarWord(html,nomeArq);
+  cm('mo-mod');
 }
 
 // ══════════════════════════════════════════════
@@ -2461,7 +2888,16 @@ function adicionarTipoDoc(){
   saveTiposDoc(tipos);
   if(inp)inp.value='';
   rTiposDoc();
-  notify('Tipo "'+val+'" adicionado!');
+  // Criar pasta do novo tipo no Drive para CADA cliente (padrão CLIENTE > Documentos > [Tipo])
+  if(driveReady&&typeof criarPastaDrive==='function'){
+    let criadas=0;
+    emps.forEach(async e=>{
+      try{await criarPastaDrive((e.fan||e.raz)+'/Documentos/'+val);criadas++;}catch(err){}
+    });
+    notify('Tipo "'+val+'" adicionado! Pastas sendo criadas no Drive para '+emps.length+' cliente(s).');
+  }else{
+    notify('Tipo "'+val+'" adicionado! (Conecte o Drive para criar as pastas automaticamente)');
+  }
 }
 
 function removerTipoDoc(idx){
