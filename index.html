@@ -855,6 +855,9 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 .nfy.sh{opacity:1;}
 .nfy.sc{background:#10b981;color:#fff;}
 .nfy.er{background:#ef4444;color:#fff;}
+.dash-tab{background:transparent;border:none;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s;font-family:inherit;}
+.dash-tab:hover{color:var(--t1);}
+.dash-tab.on{color:var(--g2);border-bottom-color:var(--g2);}
 </style>
 </head>
 <body>
@@ -974,6 +977,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
   <div class="ni on" onclick="go('dashboard',this)"><span class="ni-ic">▣</span>Dashboard</div>
 
   <div class="sb-sec">CRM Comercial</div>
+  <div class="ni" onclick="go('relacionamento',this)"><span class="ni-ic">☎️</span>Relacionamento<span class="nb" id="nb-rel" style="display:none">0</span></div>
   <div class="ni" onclick="go('municipios',this)"><span class="ni-ic">🏛</span>Municípios</div>
   <div class="ni" onclick="go('parcerias',this)"><span class="ni-ic">🤝</span>Parcerias</div>
   <div class="ni" onclick="go('empresas',this)"><span class="ni-ic">🏢</span>Clientes</div>
@@ -1019,6 +1023,15 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
       <button class="bt bt-gold bt-sm" onclick="omProc()">+ Processo</button>
     </div>
   </div>
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);padding-bottom:2px">
+    <button class="dash-tab on" id="dt-exec" onclick="dashTab('exec')">🎯 Executivo</button>
+    <button class="dash-tab" id="dt-fin" onclick="dashTab('fin')">💰 Financeiro</button>
+    <button class="dash-tab" id="dt-com" onclick="dashTab('com')">📞 Comercial</button>
+    <button class="dash-tab" id="dt-inst" onclick="dashTab('inst')">🏛 Institucional</button>
+    <div style="flex:1"></div>
+    <select class="fs" id="dash-ano" onchange="rDash()" style="max-width:100px;font-size:12px"></select>
+  </div>
+  <div id="dash-exec">
   <div class="g5">
     <div class="metric-card"><div class="mc-icon">📋</div><div class="mc-label">Processos</div><div class="mc-val" id="kp-proc">0</div><div class="mc-sub">Em andamento</div><div class="mc-line"></div></div>
     <div class="metric-card"><div class="mc-icon">📄</div><div class="mc-label">Contratos Ativos</div><div class="mc-val" id="kp-cont">0</div><div class="mc-sub">Vigentes</div><div class="mc-line"></div></div>
@@ -1042,9 +1055,28 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
     <div class="card"><div class="card-title">🏆 Top Municípios por Faturamento</div><div id="d-topval"></div></div>
     <div class="card"><div class="card-title">📞 Contatos do Mês por Tipo</div><div id="d-conttipo"></div></div>
   </div>
+  </div>
+  <div id="dash-fin" style="display:none"></div>
+  <div id="dash-com" style="display:none"></div>
+  <div id="dash-inst" style="display:none"></div>
 </div>
 
 <!-- ══ MUNICÍPIOS ══ -->
+<!-- ══ RELACIONAMENTO COM CLIENTES (CRM + Telefonia) ══ -->
+<div class="vw" id="vw-relacionamento">
+  <div class="ph"><div class="ph-left"><div class="ph-gold">CRM Institucional</div><div class="ph-title">Relacionamento com Clientes</div><div class="ph-sub">Organizado por região · Telefonia · Histórico completo</div></div>
+    <div class="ph-right"><button class="bt bt-outline bt-sm" onclick="relModo('lista')" id="rl-btn-lista">📋 Lista</button><button class="bt bt-gold bt-sm" onclick="relModo('telefonia')" id="rl-btn-tel">☎️ Modo Telefonia</button></div>
+  </div>
+  <div style="padding:0 8px">
+    <div class="fr" style="gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select class="fs" id="rl-regiao" onchange="rRelac()" style="max-width:180px"><option value="">Todas as regiões</option></select>
+      <input class="fi" id="rl-busca" placeholder="🔍 Buscar cidade ou contato..." oninput="rRelac()" style="max-width:240px">
+      <select class="fs" id="rl-filtro" onchange="rRelac()" style="max-width:170px"><option value="">Todos</option><option value="pend">⚠ Com pendências</option><option value="prox">📅 Próximo contato</option><option value="semcontato">📵 Sem contato há 30d+</option></select>
+    </div>
+    <div id="rl-ct"></div>
+  </div>
+</div>
+
 <div class="vw" id="vw-municipios">
   <div class="ph">
     <div class="ph-left"><div class="ph-gold">CRM</div><div class="ph-title">Municípios</div><div class="ph-sub">Gestão do território de atuação</div></div>
@@ -1862,7 +1894,7 @@ function salvarVisual(){vis.cor1=gv('cfg-cor1');vis.cor2=gv('cfg-cor2');vis.nome
 // ══════════════════════════════════════════════
 // NAVIGATION
 // ══════════════════════════════════════════════
-const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Gestão de Processos e Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Gestão de Documentos <small>Biblioteca por cliente</small>',municipios:'Municípios <small>CRM Municipal</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios <small>Executivo · Sintético · Analítico</small>',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>',agenda:'Agenda <small>Prazos e compromissos</small>',modelos:'Modelos <small>Documentos timbrados</small>'};
+const TITLES={dashboard:'Dashboard <small>Visão Geral</small>',processos:'Gestão de Processos e Contratos',faturamento:'Faturamento <small>Comparativo anual</small>',documentos:'Gestão de Documentos <small>Biblioteca por cliente</small>',municipios:'Municípios <small>CRM Municipal</small>',relacionamento:'Relacionamento com Clientes <small>CRM institucional · Telefonia</small>',parcerias:'Parcerias <small>Convênios e Cartões de Desconto</small>',portais:'Portais de Licitação',relatorios:'Relatórios <small>Executivo · Sintético · Analítico</small>',empresas:'Empresas Clientes',config:'Configurações <small>Drive · Visual · Backup</small>',proposta:'Proposta Comercial <small>Gere propostas personalizadas com BGC.AI</small>',agenda:'Agenda <small>Prazos e compromissos</small>',modelos:'Modelos <small>Documentos timbrados</small>'};
 const ACTIONS={processos:`<button class="bt bt-p bt-sm" onclick="omProc()">+ Novo Processo</button>`,documentos:`<button class="bt bt-outline bt-sm" onclick="gerarTodasBases()">⊕ Bases</button><button class="bt bt-p bt-sm" onclick="omDoc()">+ Novo Documento</button>`,municipios:`<button class="bt bt-p bt-sm" onclick="omMuni()">+ Novo Município</button><button class="bt bt-g bt-sm" onclick="modeloMuniCSV()">📋 Modelo CSV</button><button class="bt bt-g bt-sm" onclick="document.getElementById('imp-muni-csv').click()">⬆ Importar CSV</button><button class="bt bt-g bt-sm" onclick="exportMuniCSV()">⬇ Exportar</button><input type="file" id="imp-muni-csv" accept=".csv" style="display:none" onchange="importMuniCSV(this)">`,parcerias:`<button class="bt bt-p bt-sm" onclick="omParc()">+ Nova Parceria</button>`,empresas:`<button class="bt bt-p bt-sm" onclick="omEmp()">+ Nova Empresa</button><button class="bt bt-g bt-sm" onclick="modeloEmpCSV()">📋 Modelo CSV</button><button class="bt bt-g bt-sm" onclick="document.getElementById('imp-emp-csv').click()">⬆ Importar CSV</button><input type="file" id="imp-emp-csv" accept=".csv" style="display:none" onchange="importEmpCSV(this)">`,faturamento:`<button class="bt bt-g bt-sm" onclick="exportFatCSV()">⬇ CSV</button>`,dashboard:'',portais:'',relatorios:'',config:'',proposta:''};
 function go(v,el){
   // Recarregar dados frescos ao navegar
@@ -1874,7 +1906,7 @@ function go(v,el){
   if(el)el.classList.add('on');
   document.getElementById('pg-title').innerHTML=TITLES[v]||v;
   const _el_tb_act=document.getElementById('tb-act');if(_el_tb_act)_el_tb_act.innerHTML=ACTIONS[v]||'';
-  ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg,agenda:rAgenda,modelos:rModelos})[v]?.();
+  ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,relacionamento:rRelac,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg,agenda:rAgenda,modelos:rModelos})[v]?.();
   updBadges();
 }
 
@@ -1912,7 +1944,116 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.tar
 // ══════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════
+let dashTabAtual='exec';
+function dashTab(t){dashTabAtual=t;['exec','fin','com','inst'].forEach(x=>{const b=document.getElementById('dt-'+x),d=document.getElementById('dash-'+x);if(b)b.classList.toggle('on',x===t);if(d)d.style.display=x===t?'block':'none';});rDash();}
+
+function dashAno(){const el=document.getElementById('dash-ano');if(el&&!el.options.length){const a=new Date().getFullYear();el.innerHTML=[a-1,a,a+1].map(x=>`<option${x===a?' selected':''}>${x}</option>`).join('');}return parseInt(gv('dash-ano'))||new Date().getFullYear();}
+
+function barsHoriz(items,fmt){const mx=Math.max(...items.map(i=>i.v),1);return items.length?items.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="font-size:11px;color:var(--t2);width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.l}</div><div style="flex:1;background:rgba(255,255,255,.05);border-radius:99px;height:8px;overflow:hidden"><div style="height:100%;border-radius:99px;background:${i.c||'linear-gradient(90deg,var(--g1),var(--g2))'};width:${Math.round(i.v/mx*100)}%"></div></div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;width:90px;text-align:right;color:${i.tc||'var(--t1)'}">${fmt?fmt(i.v):i.v}</div></div>`).join(''):'<div style="font-size:11px;color:var(--t3);padding:10px 0">Sem dados</div>';}
+
+function rDashFin(){
+  const ct=document.getElementById('dash-fin');if(!ct)return;
+  const ano=dashAno(),anoAnt=ano-1;
+  const ids=proc.filter(p=>p.fase==='Contrato Ativo').map(p=>p.id).concat(parc.map(p=>p.id));
+  const mesesAbr=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const recMes=mesesAbr.map((_,i)=>fatGeralMes(ano,i));
+  const recMesAnt=mesesAbr.map((_,i)=>{let t=0;Object.keys(fat).forEach(k=>t+=fatDe(k,anoAnt,i));return t;});
+  const recAno=recMes.reduce((a,b)=>a+b,0),recAnoAnt=recMesAnt.reduce((a,b)=>a+b,0);
+  const cresc=recAnoAnt>0?((recAno-recAnoAnt)/recAnoAnt*100):0;
+  const contAtivos=proc.filter(p=>p.fase==='Contrato Ativo');
+  const ticket=contAtivos.length?recAno/contAtivos.length:0;
+  const mxM=Math.max(...recMes,1);
+  // Por cliente
+  const porCli={};contAtivos.forEach(p=>{const e=emps.find(x=>x.id===p.empresa);const n=e?e.fan||e.raz:'—';porCli[n]=(porCli[n]||0)+fatAnoTotal(p.id,ano);});
+  const cliBars=Object.entries(porCli).map(([l,v])=>({l,v,tc:'var(--gr2)'})).sort((a,b)=>b.v-a.v).slice(0,6);
+  // Por região
+  const porReg={};contAtivos.forEach(p=>{const m=munis.find(x=>x.id===p.municipio);const r=m?.regiao||'—';porReg[r]=(porReg[r]||0)+fatAnoTotal(p.id,ano);});
+  const regBars=Object.entries(porReg).map(([l,v])=>({l,v,tc:'var(--a2)',c:'linear-gradient(90deg,var(--a2),var(--ac))'})).sort((a,b)=>b.v-a.v).filter(x=>x.v>0).slice(0,6);
+  // Por parceria
+  const parcBars=parc.map(p=>{const m=munis.find(x=>x.id===p.municipio);return{l:(p.tipo||'Parceria')+(m?' - '+m.nome:''),v:fatAnoTotal(p.id,ano),tc:'#a78bfa',c:'linear-gradient(90deg,#7c3aed,#a78bfa)'};}).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,5);
+  ct.innerHTML=`<div class="g5" style="margin-bottom:16px">
+    <div class="metric-card"><div class="mc-icon">💵</div><div class="mc-label">Receita ${ano}</div><div class="mc-val" style="font-size:17px;color:var(--gr2)">${fmtV(recAno)}</div><div class="mc-sub">Acumulada</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">📈</div><div class="mc-label">Crescimento</div><div class="mc-val" style="font-size:19px;color:${cresc>=0?'var(--gr2)':'var(--re2)'}">${cresc>=0?'+':''}${cresc.toFixed(1)}%</div><div class="mc-sub">vs ${anoAnt}</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🎫</div><div class="mc-label">Ticket Médio</div><div class="mc-val" style="font-size:16px">${fmtV(ticket)}</div><div class="mc-sub">Por contrato</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">📄</div><div class="mc-label">Contratos</div><div class="mc-val">${contAtivos.length}</div><div class="mc-sub">Ativos</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🤝</div><div class="mc-label">Parcerias</div><div class="mc-val">${parc.filter(p=>p.status==='Ativo'||!p.status).length}</div><div class="mc-sub">Ativas</div><div class="mc-line"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="card-title">💰 Receita Mensal ${ano} ${recAnoAnt>0?`<span style="font-size:11px;color:var(--t3);font-weight:400">(comparativo ${anoAnt} tracejado)</span>`:''}</div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:150px;padding:8px 2px">${recMes.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative" title="${mesesAbr[i]}: ${fmtV(v)}"><div style="font-size:8px;color:var(--gr2);font-weight:700">${v>0?(v/1000).toFixed(0)+'k':''}</div><div style="width:100%;position:relative;height:110px;display:flex;align-items:flex-end"><div style="width:100%;background:linear-gradient(180deg,var(--gr2),#0a7a5c);border-radius:3px 3px 0 0;height:${Math.max(2,Math.round(v/mxM*105))}px;opacity:${v>0?1:.12}"></div>${recMesAnt[i]>0?`<div style="position:absolute;bottom:${Math.round(recMesAnt[i]/mxM*105)}px;left:0;right:0;border-top:2px dashed var(--go2)"></div>`:''}</div><div style="font-size:9px;color:var(--t3)">${mesesAbr[i]}</div></div>`).join('')}</div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">👥 Receita por Cliente</div>${barsHoriz(cliBars,fmtV)}</div>
+    <div class="card"><div class="card-title">📍 Receita por Região</div>${barsHoriz(regBars,fmtV)}</div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">🤝 Receita por Parceria</div>${barsHoriz(parcBars,fmtV)}</div>
+    <div class="card"><div class="card-title">📊 Resumo Anual</div><div style="padding:8px 0"><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Receita ${ano}</span><strong style="color:var(--gr2)">${fmtV(recAno)}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Receita ${anoAnt}</span><span>${fmtV(recAnoAnt)}</span></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Diferença</span><strong style="color:${recAno>=recAnoAnt?'var(--gr2)':'var(--re2)'}">${recAno>=recAnoAnt?'+':''}${fmtV(recAno-recAnoAnt)}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:12px;color:var(--t2)">Ticket médio</span><strong>${fmtV(ticket)}</strong></div></div></div>
+  </div>`;
+}
+
+function rDashCom(){
+  const ct=document.getElementById('dash-com');if(!ct)return;
+  const ano=dashAno();
+  const doAno=contatos.filter(c=>{const d=new Date(c.data);return !isNaN(d)&&d.getFullYear()===ano;});
+  const cont=t=>doAno.filter(c=>c.tipo===t).length;
+  const lig=cont('ligacao'),wpp=cont('whatsapp'),eml=cont('email'),vis=cont('visita'),reu=cont('reuniao'),evt=cont('evento');
+  const muniAtend=new Set(doAno.map(c=>c.municipio)).size;
+  const conv=doAno.filter(c=>c.result==='Convertido'||c.result==='Agendou').length;
+  const taxaConv=doAno.length?(conv/doAno.length*100):0;
+  const pend=contatos.filter(c=>c.pend).length;
+  const hoje=new Date(new Date().toDateString());
+  const agFut=contatos.filter(c=>c.proxdata&&new Date(c.proxdata)>=hoje).sort((a,b)=>new Date(a.proxdata)-new Date(b.proxdata)).slice(0,8);
+  const novosContatos=new Set(doAno.map(c=>c.com).filter(Boolean)).size;
+  const mesesAbr=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const porMes=mesesAbr.map((_,i)=>doAno.filter(c=>new Date(c.data).getMonth()===i).length);
+  const mxM=Math.max(...porMes,1);
+  ct.innerHTML=`<div class="g5" style="margin-bottom:16px">
+    <div class="metric-card"><div class="mc-icon">📞</div><div class="mc-label">Ligações</div><div class="mc-val">${lig}</div><div class="mc-sub">${ano}</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🚗</div><div class="mc-label">Visitas</div><div class="mc-val">${vis}</div><div class="mc-sub">${ano}</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">👥</div><div class="mc-label">Reuniões</div><div class="mc-val">${reu}</div><div class="mc-sub">${ano}</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🏛</div><div class="mc-label">Municípios</div><div class="mc-val">${muniAtend}</div><div class="mc-sub">Atendidos</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🎯</div><div class="mc-label">Conversão</div><div class="mc-val" style="color:var(--gr2)">${taxaConv.toFixed(0)}%</div><div class="mc-sub">${conv} conv.</div><div class="mc-line"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><div class="card-title">📊 Atividades por Mês ${ano}</div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:120px;padding:8px 2px">${porMes.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="${mesesAbr[i]}: ${v}"><div style="font-size:9px;color:var(--a2);font-weight:700">${v||''}</div><div style="width:100%;background:linear-gradient(180deg,var(--a2),#1a5a9e);border-radius:3px 3px 0 0;height:${Math.max(2,Math.round(v/mxM*85))}px;opacity:${v>0?1:.12}"></div><div style="font-size:9px;color:var(--t3)">${mesesAbr[i]}</div></div>`).join('')}</div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">📋 Contatos por Tipo</div>${barsHoriz([{l:'📞 Ligações',v:lig},{l:'💬 WhatsApp',v:wpp},{l:'✉ E-mails',v:eml},{l:'🚗 Visitas',v:vis},{l:'👥 Reuniões',v:reu},{l:'🎪 Eventos',v:evt}].filter(x=>x.v>0))}</div>
+    <div class="card"><div class="card-title">🎯 Indicadores</div><div style="padding:6px 0"><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Total de contatos</span><strong>${doAno.length}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Novos contatos (pessoas)</span><strong>${novosContatos}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd2)"><span style="font-size:12px;color:var(--t2)">Conversões</span><strong style="color:var(--gr2)">${conv}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:12px;color:var(--t2)">Pendências abertas</span><strong style="color:var(--go2)">${pend}</strong></div></div></div>
+  </div>
+  <div class="card"><div class="card-title">📅 Agenda Futura (próximos contatos)</div>${agFut.length?agFut.map(c=>{const m=munis.find(x=>x.id===c.municipio);return`<div class="hi" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:12px;font-weight:500">${m?m.nome+' – '+m.uf:'—'}</div><div style="font-size:10.5px;color:var(--t2)">${c.pend||c.proximo||c.resumo||''}</div></div><div style="text-align:right"><div style="font-size:11px;color:var(--a2);font-weight:600">📅 ${fmtD(c.proxdata)}</div></div></div>`;}).join(''):'<div style="font-size:11px;color:var(--t3);padding:10px 0">Nenhum contato futuro agendado</div>'}</div>`;
+}
+
+function rDashInst(){
+  const ct=document.getElementById('dash-inst');if(!ct)return;
+  const porComtipo=t=>contatos.filter(c=>c.comtipo===t).length;
+  const pref=porComtipo('Prefeito'),sec=porComtipo('Secretário'),ag=porComtipo('Agendador'),outro=porComtipo('Outro');
+  // Municípios mais ativos
+  const ativos=munis.map(m=>({l:m.nome+' – '+m.uf,v:contatosDoMuni(m.id).length,curva:m.curva})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,8);
+  // Tempo médio entre contatos (global)
+  const temposMun=munis.map(m=>{const cs=contatosDoMuni(m.id);if(cs.length<2)return null;const datas=cs.map(c=>new Date(c.data)).sort((a,b)=>a-b);let soma=0;for(let i=1;i<datas.length;i++)soma+=(datas[i]-datas[i-1])/(864e5);return soma/(datas.length-1);}).filter(x=>x!==null);
+  const tempoMedio=temposMun.length?(temposMun.reduce((a,b)=>a+b,0)/temposMun.length):0;
+  // Sem contato há mais tempo
+  const esquecidos=munis.map(m=>({m,d:diasSemContato(m.id)})).filter(x=>x.d>=30&&x.d<9999).sort((a,b)=>b.d-a.d).slice(0,6);
+  ct.innerHTML=`<div class="g5" style="margin-bottom:16px">
+    <div class="metric-card"><div class="mc-icon">👔</div><div class="mc-label">C/ Prefeitos</div><div class="mc-val">${pref}</div><div class="mc-sub">Contatos</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🩺</div><div class="mc-label">C/ Secretários</div><div class="mc-val">${sec}</div><div class="mc-sub">Contatos</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">📅</div><div class="mc-label">C/ Agendadores</div><div class="mc-val">${ag}</div><div class="mc-sub">Contatos</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">🏛</div><div class="mc-label">Municípios Ativos</div><div class="mc-val">${ativos.length}</div><div class="mc-sub">Com histórico</div><div class="mc-line"></div></div>
+    <div class="metric-card"><div class="mc-icon">⏱</div><div class="mc-label">Tempo Médio</div><div class="mc-val" style="font-size:18px">${tempoMedio.toFixed(0)}d</div><div class="mc-sub">Entre contatos</div><div class="mc-line"></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">🏆 Municípios Mais Ativos</div>${barsHoriz(ativos.map(a=>({l:a.l,v:a.v,tc:'var(--g2)'})))}</div>
+    <div class="card"><div class="card-title">👤 Contatos por Interlocutor</div>${barsHoriz([{l:'👔 Prefeitos',v:pref},{l:'🩺 Secretários',v:sec},{l:'📅 Agendadores',v:ag},{l:'📌 Outros',v:outro}].filter(x=>x.v>0))}</div>
+  </div>
+  <div class="card"><div class="card-title">⚠ Municípios Sem Contato Recente (30d+)</div>${esquecidos.length?esquecidos.map(e=>`<div class="hi" style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;font-weight:500">${e.m.nome} – ${e.m.uf} <span style="font-size:10px;color:var(--t3)">${e.m.regiao||''}</span></div><span class="pl pl-dv">${e.d} dias</span></div>`).join(''):'<div style="font-size:11px;color:var(--gr2);padding:10px 0">✅ Todos os municípios com contato recente!</div>'}</div>`;
+}
+
 function rDash(){
+  dashAno();
+  if(dashTabAtual==='fin'){rDashFin();return;}
+  if(dashTabAtual==='com'){rDashCom();return;}
+  if(dashTabAtual==='inst'){rDashInst();return;}
   if(!document.getElementById('kp-proc'))return;
   document.getElementById('kp-proc').textContent=proc.filter(p=>p.fase!=='Arquivado').length;
   document.getElementById('kp-cont').textContent=proc.filter(p=>p.fase==='Contrato Ativo').length;
@@ -2401,6 +2542,100 @@ let selMuni=null;
 const tipIc={phone:'📞',whats:'💬',email:'✉',visita:'🚗',reuniao:'💻'};
 const tipNm={phone:'Ligação',whats:'WhatsApp',email:'E-mail',visita:'Visita',reuniao:'Reunião'};
 const oriMap={D:'Direita',E:'Esquerda',C:'Centro'};const oriCl={D:'pol-d',E:'pol-e',C:'pol-c'};
+let relModoAtual='lista';
+function relModo(m){relModoAtual=m;const bl=document.getElementById('rl-btn-lista'),bt=document.getElementById('rl-btn-tel');if(bl&&bt){bl.className='bt bt-sm '+(m==='lista'?'bt-gold':'bt-outline');bt.className='bt bt-sm '+(m==='telefonia'?'bt-gold':'bt-outline');}rRelac();}
+
+function contatosDoMuni(mid){return contatos.filter(c=>c.municipio===mid).sort((a,b)=>new Date(b.data+' '+(b.hora||'00:00'))-new Date(a.data+' '+(a.hora||'00:00')));}
+function ultimoContato(mid){return contatosDoMuni(mid)[0]||null;}
+function diasSemContato(mid){const u=ultimoContato(mid);if(!u)return 9999;return Math.floor((Date.now()-new Date(u.data).getTime())/(1000*60*60*24));}
+const CTIP={ligacao:'📞',whatsapp:'💬',email:'✉',visita:'🚗',reuniao:'👥',evento:'🎪',outro:'📌'};
+const CTIPN={ligacao:'Ligação',whatsapp:'WhatsApp',email:'E-mail',visita:'Visita',reuniao:'Reunião',evento:'Evento',outro:'Outro'};
+
+function rRelac(){
+  const ct=document.getElementById('rl-ct');if(!ct)return;
+  // Preencher filtro de regiões
+  const fReg=document.getElementById('rl-regiao');
+  if(fReg){const regs=[...new Set(munis.map(m=>m.regiao).filter(Boolean))].sort();const cur=fReg.value;fReg.innerHTML='<option value="">Todas as regiões</option>'+regs.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');}
+  const regF=gv('rl-regiao')||'',q=(gv('rl-busca')||'').toLowerCase(),filtro=gv('rl-filtro')||'';
+  let lista=munis.filter(m=>(!regF||m.regiao===regF));
+  if(q)lista=lista.filter(m=>{const cs=contatosDoMuni(m.id);return(m.nome+(m.regiao||'')+(m.prefeito||'')+(m.secretario||'')).toLowerCase().includes(q)||cs.some(c=>(c.com+c.resumo).toLowerCase().includes(q));});
+  if(filtro==='pend')lista=lista.filter(m=>contatosDoMuni(m.id).some(c=>c.pend));
+  else if(filtro==='prox')lista=lista.filter(m=>contatosDoMuni(m.id).some(c=>c.proxdata&&new Date(c.proxdata)>=new Date(new Date().toDateString())));
+  else if(filtro==='semcontato')lista=lista.filter(m=>diasSemContato(m.id)>=30);
+  lista.sort((a,b)=>(a.regiao||'zzz').localeCompare(b.regiao||'zzz')||a.nome.localeCompare(b.nome));
+  if(!lista.length){ct.innerHTML=`<div class="em" style="padding:40px"><div class="em-ic">☎️</div><div class="em-t">Nenhum município encontrado</div></div>`;return;}
+  if(relModoAtual==='telefonia')rRelacTelefonia(lista);else rRelacLista(lista);
+}
+
+function rRelacLista(lista){
+  const ct=document.getElementById('rl-ct');
+  let html='',regAtual=null;
+  lista.forEach(m=>{
+    const reg=m.regiao||'Sem região';
+    if(reg!==regAtual){regAtual=reg;const n=lista.filter(x=>(x.regiao||'Sem região')===reg).length;html+=`<div style="padding:8px 14px;background:var(--bd2);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--g2);text-transform:uppercase;border-radius:6px;margin:14px 0 8px">📍 ${reg} <span style="color:var(--t3);font-weight:400">(${n} cidades)</span></div>`;}
+    const cs=contatosDoMuni(m.id),ult=cs[0],dsc=diasSemContato(m.id);
+    const pend=cs.filter(c=>c.pend);const prox=cs.filter(c=>c.proxdata&&new Date(c.proxdata)>=new Date(new Date().toDateString())).sort((a,b)=>new Date(a.proxdata)-new Date(b.proxdata))[0];
+    const alerta=dsc>=30&&dsc<9999?`<span class="pl pl-dv" style="font-size:9px">${dsc}d sem contato</span>`:dsc===9999?`<span class="pl pl-x" style="font-size:9px">nunca contatado</span>`:'';
+    html+=`<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">
+      <div style="padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="toggleRelMuni('${m.id}')">
+        <div class="av" style="width:34px;height:34px;background:${acor(m.nome)};font-size:11px">${ini(m.nome)}</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px">${m.nome} – ${m.uf} ${alerta}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">${cs.length} interação(ões)${ult?' · último: '+CTIP[ult.tipo]+' '+fmtD(ult.data):''}${pend.length?' · <span style="color:var(--go2)">⚠ '+pend.length+' pendência(s)</span>':''}</div></div>
+        ${prox?`<div style="text-align:right;font-size:10.5px"><div style="color:var(--a2);font-weight:600">📅 Próximo</div><div style="color:var(--t2)">${fmtD(prox.proxdata)}</div></div>`:''}
+        <button class="bt bt-p bt-xs" onclick="event.stopPropagation();omContato('${m.id}')">+ Contato</button>
+        <span id="rel-arrow-${m.id}" style="color:var(--t3);font-size:14px">▸</span>
+      </div>
+      <div id="rel-body-${m.id}" style="display:none;border-top:1px solid var(--bd);padding:14px 16px;background:rgba(255,255,255,.02)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="ib"><div class="il">🏛 Prefeitura</div><div style="font-size:12px;margin-top:4px"><strong>${m.prefeito||'—'}</strong>${m.prefeitoTel?'<br><span style="color:var(--t2);font-size:11px">'+m.prefeitoTel+'</span>':''}</div></div>
+          <div class="ib"><div class="il">🩺 Secretaria de Saúde</div><div style="font-size:12px;margin-top:4px"><strong>${m.secretario||'—'}</strong>${m.secretarioTel?'<br><span style="color:var(--t2);font-size:11px">'+m.secretarioTel+'</span>':''}</div></div>
+          <div class="ib"><div class="il">📅 Agendador 1</div><div style="font-size:12px;margin-top:4px"><strong>${m.agendadora||'—'}</strong>${m.agendadoraTel?'<br><span style="color:var(--t2);font-size:11px">'+m.agendadoraTel+'</span>':''}</div></div>
+          <div class="ib"><div class="il">📅 Agendador 2</div><div style="font-size:12px;margin-top:4px"><strong>${m.agendador2||'—'}</strong>${m.agendador2Tel?'<br><span style="color:var(--t2);font-size:11px">'+m.agendador2Tel+'</span>':''}</div></div>
+        </div>
+        ${m.sobre?`<div style="font-size:11px;color:var(--t2);margin-bottom:10px;padding:8px 10px;background:var(--gol);border-radius:6px">ℹ ${m.sobre}</div>`:''}
+        <div style="font-size:11px;font-weight:700;color:var(--g2);letter-spacing:1px;margin-bottom:8px">HISTÓRICO DE INTERAÇÕES</div>
+        ${cs.length?cs.map(c=>`<div class="hi" style="border-left:3px solid ${c.result==='Positivo'||c.result==='Convertido'||c.result==='Agendou'?'var(--gr2)':c.result==='Negativo'?'var(--re2)':'var(--bd)'};padding-left:10px">
+          <div style="font-size:10.5px;color:var(--t3);display:flex;justify-content:space-between"><span>${CTIP[c.tipo]||'📌'} ${CTIPN[c.tipo]||c.tipo} · ${fmtD(c.data)} ${c.hora||''} · ${c.resp||'—'}</span>${c.result?`<span class="pl ${c.result==='Positivo'||c.result==='Convertido'?'pl-ca':c.result==='Negativo'?'pl-dv':'pl-x'}" style="font-size:8.5px">${c.result}</span>`:''}</div>
+          <div style="font-size:12px;margin-top:3px">${c.comtipo?'<strong>'+c.comtipo+(c.com?' ('+c.com+')':'')+':</strong> ':''}${c.resumo||'—'}</div>
+          ${c.pend?`<div style="font-size:10.5px;color:var(--go2);margin-top:2px">⚠ Pendência: ${c.pend}</div>`:''}
+          ${c.proxdata?`<div style="font-size:10.5px;color:var(--a2);margin-top:2px">📅 Próximo contato: ${fmtD(c.proxdata)}</div>`:''}
+          ${c.anexo?`<a href="${c.anexo}" target="_blank" style="font-size:10.5px;color:var(--a2)">📎 Anexo</a>`:''}
+        </div>`).join(''):`<div style="font-size:11px;color:var(--t3);padding:8px 0">Nenhuma interação registrada ainda.</div>`}
+      </div>
+    </div>`;
+  });
+  ct.innerHTML=html;
+}
+function toggleRelMuni(id){const b=document.getElementById('rel-body-'+id),a=document.getElementById('rel-arrow-'+id);if(!b)return;const open=b.style.display!=='none';b.style.display=open?'none':'block';if(a)a.textContent=open?'▸':'▾';}
+
+function rRelacTelefonia(lista){
+  const ct=document.getElementById('rl-ct');
+  const reg=gv('rl-regiao');
+  const cabecalho=reg?`<div class="card" style="margin-bottom:14px;padding:16px;background:linear-gradient(135deg,rgba(201,168,76,.08),transparent);border:1px solid rgba(201,168,76,.2)"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:28px">☎️</div><div><div style="font-family:Syne,sans-serif;font-size:17px;font-weight:700;color:var(--g2)">Modo Telefonia — Região ${reg}</div><div style="font-size:11.5px;color:var(--t2)">${lista.length} cidade(s) · Trabalhe cidade por cidade, registre e avance</div></div></div></div>`:`<div class="card" style="margin-bottom:14px;padding:16px"><div style="font-size:12px;color:var(--t2)">💡 Selecione uma <strong>região</strong> acima para iniciar o modo telefonia focado. Mostrando todas as cidades.</div></div>`;
+  let html=cabecalho+'<div style="display:grid;gap:10px">';
+  lista.forEach(m=>{
+    const cs=contatosDoMuni(m.id),ult=cs[0],dsc=diasSemContato(m.id);
+    const prox=cs.filter(c=>c.proxdata).sort((a,b)=>new Date(b.proxdata)-new Date(a.proxdata))[0];
+    const pends=cs.filter(c=>c.pend);
+    const tels=[[m.prefeito,'Prefeito',m.prefeitoTel],[m.secretario,'Secretário',m.secretarioTel],[m.agendadora,'Agend.1',m.agendadoraTel],[m.agendador2,'Agend.2',m.agendador2Tel]].filter(t=>t[2]);
+    html+=`<div class="card" style="padding:0;overflow:hidden;border-left:3px solid ${dsc>=30?'var(--go2)':'var(--gr2)'}">
+      <div style="padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div class="av" style="width:32px;height:32px;background:${acor(m.nome)};font-size:11px">${ini(m.nome)}</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:14px">${m.nome} – ${m.uf}</div><div style="font-size:10.5px;color:var(--t2)">${dsc===9999?'Nunca contatado':dsc+' dias desde o último contato'}</div></div>
+          <button class="bt bt-p bt-sm" onclick="omContato('${m.id}')">☎️ Registrar Ligação</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${tels.length?tels.map(t=>`<div style="font-size:11px;background:var(--bd2);padding:4px 10px;border-radius:6px"><strong>${t[1]}:</strong> ${t[0]||''} <span style="color:var(--a2)">${t[2]}</span></div>`).join(''):'<span style="font-size:11px;color:var(--t3)">Sem telefones cadastrados</span>'}</div>
+        ${prox?`<div style="font-size:11px;color:var(--a2);margin-bottom:6px">📅 Próximo contato agendado: <strong>${fmtD(prox.proxdata)}</strong></div>`:''}
+        ${pends.length?`<div style="font-size:11px;color:var(--go2);margin-bottom:6px">⚠ Pendências: ${pends.map(p=>p.pend).join('; ')}</div>`:''}
+        ${ult?`<div style="font-size:11px;color:var(--t2);padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px"><strong>Última conversa</strong> (${CTIP[ult.tipo]} ${fmtD(ult.data)}): ${ult.resumo||'—'}</div>`:`<div style="font-size:11px;color:var(--t3)">Nenhuma conversa anterior.</div>`}
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  ct.innerHTML=html;
+}
+
 function rMunis(){
   const q=(gv('s-muni')||'').toLowerCase(),cur=gv('f-curva'),regF=gv('f-regiao')||'';
   const lista=munis.filter(m=>(!q||(m.nome+m.uf+(m.regiao||'')).toLowerCase().includes(q))&&(!cur||m.curva===cur)&&(!regF||m.regiao===regF)).sort((a,b)=>(a.regiao||'zzz').localeCompare(b.regiao||'zzz')||a.nome.localeCompare(b.nome));
@@ -2904,23 +3139,28 @@ function omContato(munId){
     <div class="mt"><span>📞 Registrar Contato</span><span class="mx" onclick="cm('mo-ctt')">✕</span></div>
     <input type="hidden" id="ct-mun" value="${munId||''}">
     <div class="fr"><div class="fg"><label>Tipo</label><select class="fs" id="ct-tipo">
-      <option value="ligacao">📞 Ligação</option><option value="visita">🚗 Visita</option><option value="reuniao">👥 Reunião</option></select></div>
+      <option value="ligacao">📞 Ligação</option><option value="whatsapp">💬 WhatsApp</option><option value="email">✉ E-mail</option><option value="visita">🚗 Visita</option><option value="reuniao">👥 Reunião</option><option value="evento">🎪 Evento</option><option value="outro">📌 Outro</option></select></div>
     <div class="fg"><label>Empresa (cliente)</label><select class="fs" id="ct-emp"></select></div></div>
     <div class="fr"><div class="fg"><label>Data</label><input class="fi" type="date" id="ct-data" value="${new Date().toISOString().split('T')[0]}"></div>
     <div class="fg"><label>Hora</label><input class="fi" type="time" id="ct-hora" value="${new Date().toTimeString().slice(0,5)}"></div></div>
-    <div class="fr"><div class="fg"><label>Responsável</label><input class="fi" id="ct-resp" placeholder="Quem fez o contato"></div>
-    <div class="fg"><label>Contato realizado com</label><input class="fi" id="ct-com" placeholder="Nome da pessoa contatada"></div></div>
-    <div class="fr f1"><div class="fg"><label>Descrição completa</label><textarea class="fta" id="ct-resumo" placeholder="O que foi tratado na ligação/visita/reunião"></textarea></div></div>
+    <div class="fr"><div class="fg"><label>Usuário responsável</label><input class="fi" id="ct-resp" value="${(CU&&CU.nome)||''}" placeholder="Quem fez o contato"></div>
+    <div class="fg"><label>Contato realizado com</label><select class="fs" id="ct-comtipo"><option value="Prefeito">Prefeito</option><option value="Secretário">Secretário</option><option value="Agendador">Agendador</option><option value="Outro">Outro</option></select></div></div>
+    <div class="fr f1"><div class="fg"><label>Nome da pessoa contatada</label><input class="fi" id="ct-com" placeholder="Nome de quem foi contatado"></div></div>
+    <div class="fr f1"><div class="fg"><label>Descrição completa</label><textarea class="fta" id="ct-resumo" placeholder="O que foi tratado"></textarea></div></div>
+    <div class="fr"><div class="fg"><label>Resultado</label><select class="fs" id="ct-result"><option value="">—</option><option value="Positivo">✅ Positivo</option><option value="Neutro">➖ Neutro</option><option value="Negativo">❌ Negativo</option><option value="Sem resposta">📵 Sem resposta</option><option value="Agendou">📅 Agendou</option><option value="Convertido">🎯 Convertido</option></select></div>
+    <div class="fg"><label>Próximo contato</label><input class="fi" type="date" id="ct-proxdata"></div></div>
     <div class="fr"><div class="fg"><label>Pendências</label><input class="fi" id="ct-pend"></div>
     <div class="fg"><label>Próximos passos</label><input class="fi" id="ct-prox"></div></div>
+    <div class="fr f1"><div class="fg"><label>Arquivos anexos (link Drive)</label><input class="fi" id="ct-anexo" placeholder="https://drive.google.com/..."></div></div>
     <div class="mf"><button class="bt bt-g" onclick="cm('mo-ctt')">Cancelar</button><button class="bt bt-p" onclick="salvarContato()">💾 Salvar</button></div>
   </div></div>`;
   pSel('ct-emp',emps,'id',e=>e.fan||e.raz,'');
 }
 function salvarContato(){
-  const c={id:uid(),municipio:gv('ct-mun'),tipo:gv('ct-tipo'),empresa:gv('ct-emp'),data:gv('ct-data'),hora:gv('ct-hora'),resp:gv('ct-resp'),com:gv('ct-com'),resumo:gv('ct-resumo'),pend:gv('ct-pend'),proximo:gv('ct-prox'),criadoEm:Date.now()};
+  const c={id:uid(),municipio:gv('ct-mun'),tipo:gv('ct-tipo'),empresa:gv('ct-emp'),data:gv('ct-data'),hora:gv('ct-hora'),resp:gv('ct-resp'),comtipo:gv('ct-comtipo'),com:gv('ct-com'),resumo:gv('ct-resumo'),result:gv('ct-result'),proxdata:gv('ct-proxdata'),pend:gv('ct-pend'),proximo:gv('ct-prox'),anexo:gv('ct-anexo'),criadoEm:Date.now()};
   if(!c.resumo){notify('Preencha a descrição','e');return;}
   contatos.push(c);sv(K.contatos,contatos);
+  if(c.proxdata){agenda.push({id:'ctt_'+c.id,tipo:'followup',data:c.proxdata,titulo:'Follow-up: '+(munis.find(x=>x.id===c.municipio)?.nome||''),desc:c.pend||c.proximo||'',auto:true});sv(K.agenda,agenda);}
   // Adiciona ao histórico do município também
   const m=munis.find(x=>x.id===c.municipio);
   if(m){if(!m.hist)m.hist=[];m.hist.push({dat:c.data,tip:c.tipo==='ligacao'?'lig':c.tipo==='visita'?'vis':'reu',txt:c.resumo});sv(K.munis,munis);}
