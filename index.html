@@ -1757,9 +1757,34 @@ const FASES={'Em Análise':{cl:'pl-a',bar:'#3b82f6'},'Em Montagem':{cl:'pl-m',ba
 // ══════════════════════════════════════════════
 let driveToken=null,driveReady=false,driveRootId=null;
 const DRIVE_SCOPES='https://www.googleapis.com/auth/drive.file';
+const DRIVE_TOK_KEY='bgc_drive_tok';
+
+// Salva/recupera token para manter a conexão entre recarregamentos
+function _salvarDriveToken(tok,expiraEm){
+  try{localStorage.setItem(DRIVE_TOK_KEY,JSON.stringify({t:tok,exp:Date.now()+(expiraEm*1000)}));}catch{}
+}
+function _lerDriveToken(){
+  try{
+    const d=JSON.parse(localStorage.getItem(DRIVE_TOK_KEY)||'null');
+    if(d&&d.t&&d.exp>Date.now()+60000)return d; // válido por mais de 1 min
+  }catch{}
+  return null;
+}
+function _limparDriveToken(){try{localStorage.removeItem(DRIVE_TOK_KEY);}catch{}}
+
+function _agendarRenovacao(segundos){
+  clearTimeout(window._driveRenewTimer);
+  window._driveRenewTimer=setTimeout(()=>{
+    if(window._driveTokenClient){
+      // Renova silenciosamente, sem popup
+      window._driveTokenClient.requestAccessToken({prompt:''});
+    }
+  },Math.max(30,segundos)*1000);
+}
 
 function initDrive(){
   if(!cfg.clientId||!window.google)return;
+  if(window._driveTokenClient)return; // já inicializado
   try{
     const tc=google.accounts.oauth2.initTokenClient({
       client_id:cfg.clientId,
@@ -1768,54 +1793,66 @@ function initDrive(){
         if(resp.error){
           console.error('Drive OAuth error:',resp);
           updDriveBadge(false);
-          if(resp.error==='idpiframe_initialization_failed'||resp.error==='popup_closed_by_user'){
-            notify('Popup bloqueado ou domínio não autorizado. Verifique as Origens no Google Cloud.','er');
-          } else if(resp.error==='access_denied'){
-            notify('Acesso negado. Autorize o app Google no popup.','er');
-          } else {
-            notify('Erro Drive: '+resp.error+'. Verifique o Client ID nas Configurações.','er');
+          if(resp.error==='popup_closed_by_user'||resp.error==='access_denied'){
+            // Silencioso nas renovações automáticas; só avisa se foi ação do usuário
+            if(window._driveUserAction)notify('Autorize o acesso ao Drive no popup.','er');
+          } else if(resp.error!=='immediate_failed'){
+            notify('Erro Drive: '+resp.error,'er');
           }
+          window._driveUserAction=false;
           return;
         }
         driveToken=resp.access_token;
         driveReady=true;
         driveRootId=cfg.folderId||null;
+        const expSec=(resp.expires_in||3500);
+        _salvarDriveToken(driveToken,expSec);
         updDriveBadge(true);
-        // Auto-renovar antes de expirar (token dura ~1h = 3600s)
-        const expSec=(resp.expires_in||3500)-60;
-        setTimeout(()=>{
-          if(window._driveTokenClient){
-            driveToken=null;driveReady=false;
-            window._driveTokenClient.requestAccessToken({prompt:''});
-          }
-        }, expSec*1000);
-        notify('Drive conectado!');
+        _agendarRenovacao(expSec-120); // renova 2 min antes de expirar
+        if(window._driveUserAction){notify('Drive conectado!');window._driveUserAction=false;}
       }
     });
     window._driveTokenClient=tc;
+    // Restaura sessão salva, se ainda válida
+    const salvo=_lerDriveToken();
+    if(salvo){
+      driveToken=salvo.t;driveReady=true;driveRootId=cfg.folderId||null;
+      updDriveBadge(true);
+      _agendarRenovacao(Math.floor((salvo.exp-Date.now())/1000)-120);
+    }else{
+      // Sem token válido: tenta reconectar silenciosamente (sem popup)
+      setTimeout(()=>{try{tc.requestAccessToken({prompt:'none'});}catch{}},800);
+    }
   }catch(e){
     console.error('Drive init error:',e);
-    notify('Erro ao inicializar Drive: '+e.message,'er');
   }
 }
+
+// Mantém a conexão viva mesmo se o usuário deixar a aba aberta muito tempo
+setInterval(()=>{
+  if(cfg&&cfg.clientId&&window.google){
+    if(!window._driveTokenClient)initDrive();
+    else if(!driveReady&&!_lerDriveToken()){
+      try{window._driveTokenClient.requestAccessToken({prompt:'none'});}catch{}
+    }
+  }
+},5*60*1000);
 
 function conectarDrive(){
   if(!cfg.clientId){notify('Configure o Client ID primeiro','er');return;}
+  window._driveUserAction=true;
   if(!window.google){
     notify('Google API ainda carregando — aguarde 3 segundos e tente novamente.','er');
-    // Tentar carregar GSI manualmente
-    setTimeout(()=>{if(cfg.clientId&&window.google)initDrive();},3000);
+    setTimeout(()=>{if(cfg.clientId&&window.google){initDrive();if(window._driveTokenClient)window._driveTokenClient.requestAccessToken({prompt:''});}},3000);
     return;
   }
   initDrive();
-  if(window._driveTokenClient){
-    // prompt:'' tenta reutilizar sessão; só pede login se não houver sessão ativa
-    window._driveTokenClient.requestAccessToken({prompt:''});
-  }
+  if(window._driveTokenClient)window._driveTokenClient.requestAccessToken({prompt:''});
 }
 
 function reconectarDrive(){
-  // Força nova autenticação (útil quando token expirou)
+  window._driveUserAction=true;
+  _limparDriveToken();
   if(!window._driveTokenClient) initDrive();
   if(window._driveTokenClient){
     updDriveBadge(false);
@@ -1835,15 +1872,40 @@ function updDriveBadge(on){
     :'<span style="color:var(--t3);font-size:11.5px">Não conectado — clique em Conectar</span>';
 }
 
-async function driveReq(method,path,body,query=''){
-  if(!driveToken)throw new Error('Drive não conectado. Acesse Configurações → Conectar.');
+async function _renovarDriveToken(){
+  return new Promise(resolve=>{
+    if(!window._driveTokenClient){initDrive();}
+    if(!window._driveTokenClient){resolve(false);return;}
+    const antes=driveToken;
+    try{window._driveTokenClient.requestAccessToken({prompt:''});}catch{resolve(false);return;}
+    // Aguarda o callback atualizar o token (até 8s)
+    let tentativas=0;
+    const iv=setInterval(()=>{
+      tentativas++;
+      if(driveToken&&driveToken!==antes){clearInterval(iv);resolve(true);}
+      else if(tentativas>16){clearInterval(iv);resolve(false);}
+    },500);
+  });
+}
+
+async function driveReq(method,path,body,query='',_retry){
+  if(!driveToken){
+    const salvo=_lerDriveToken();
+    if(salvo){driveToken=salvo.t;driveReady=true;updDriveBadge(true);}
+    else{
+      const ok=await _renovarDriveToken();
+      if(!ok)throw new Error('Drive não conectado. Acesse Configurações → Conectar.');
+    }
+  }
   const url=`https://www.googleapis.com/drive/v3/${path}?${query}`;
   const res=await fetch(url,{method,headers:{'Authorization':'Bearer '+driveToken,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
   if(res.status===401){
-    // Token expirado — limpa estado e pede reconexão
-    driveToken=null; updDriveBadge(false);
-    if(window._driveTokenClient) window._driveTokenClient.requestAccessToken({prompt:''});
-    throw new Error('Sessão do Drive expirada — reconectando automaticamente...');
+    driveToken=null;_limparDriveToken();updDriveBadge(false);
+    if(!_retry){
+      const ok=await _renovarDriveToken();
+      if(ok)return driveReq(method,path,body,query,true); // refaz a operação
+    }
+    throw new Error('Sessão do Drive expirada — clique em Reconectar nas Configurações.');
   }
   if(!res.ok){const e=await res.text();throw new Error('Drive API: '+res.status+' '+e.slice(0,120));}
   return res.json();
