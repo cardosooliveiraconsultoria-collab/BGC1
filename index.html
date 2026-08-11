@@ -1651,11 +1651,28 @@ function iniciarFirebaseSync(){
   const FB=window._FB;_fbSync=true;
   const varMap={proc:()=>proc,docs:()=>docs,munis:()=>munis,emps:()=>emps,portais:()=>portais,parc:()=>parc,agenda:()=>agenda,contatos:()=>contatos};
   const setMap={proc:v=>proc=v,docs:v=>docs=v,munis:v=>munis=v,emps:v=>emps=v,portais:v=>portais=v,parc:v=>parc=v,agenda:v=>agenda=v,contatos:v=>contatos=v};
+  // Restaura seed de municípios se a base local estiver vazia
+  if((!munis||munis.length===0)&&typeof SEED_MUNIS!=='undefined'&&SEED_MUNIS.length){
+    munis=JSON.parse(JSON.stringify(SEED_MUNIS));
+    munis.forEach(m=>{m.completo=muniCompleto(m);});
+    localStorage.setItem(K.munis,JSON.stringify(munis));
+  }
+  // Envia dados locais para a nuvem ANTES de escutar (evita apagar dados)
+  Object.keys(SYNC_COLS).forEach(lk=>{const d=varMap[lk]();if(d&&d.length)_pushFB(lk,d);});
+  Object.keys(SYNC_OBJ).forEach(lk=>{const v=lk==='fat'?fat:lk==='cfg'?cfg:vis;if(v&&Object.keys(v).length)_pushFB(lk,v);});
   // Listeners de coleções
   Object.entries(SYNC_COLS).forEach(([lk,colName])=>{
     FB.onSnapshot(FB.collection(FB.db,colName),snap=>{
-      _fbApplying=true;
       const arr=[];snap.forEach(d=>{try{arr.push(JSON.parse(d.data()._json));}catch{}});
+      const local=varMap[lk]()||[];
+      // PROTEÇÃO: nunca deixar a nuvem vazia apagar dados locais existentes.
+      // Nesse caso, envia os dados locais para a nuvem em vez de apagá-los.
+      if(arr.length===0&&local.length>0){
+        console.warn('Nuvem vazia para '+colName+' — enviando '+local.length+' registros locais');
+        _pushFB(lk,local);
+        return;
+      }
+      _fbApplying=true;
       setMap[lk](arr);localStorage.setItem(K[lk],JSON.stringify(arr));
       _fbApplying=false;
       _refreshTelaAtual();
@@ -1669,14 +1686,6 @@ function iniciarFirebaseSync(){
       _fbApplying=false;_refreshTelaAtual();
     },err=>console.warn('Listener '+docName+':',err.message));
   });
-  // Envia dados locais existentes para o Firestore na primeira sincronização
-  setTimeout(()=>{
-    if(!localStorage.getItem('bgc_fb_pushed_v1')){
-      Object.keys(SYNC_COLS).forEach(lk=>_pushFB(lk,varMap[lk]()));
-      Object.keys(SYNC_OBJ).forEach(lk=>{const v=lk==='fat'?fat:lk==='cfg'?cfg:vis;_pushFB(lk,v);});
-      localStorage.setItem('bgc_fb_pushed_v1','1');
-    }
-  },2000);
   const badge=document.getElementById('sync-badge');if(badge){badge.style.display='flex';}
   console.log('🔄 Sincronização em tempo real ativada');
 }
