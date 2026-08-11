@@ -859,6 +859,26 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 .dash-tab:hover{color:var(--t1);}
 .dash-tab.on{color:var(--g2);border-bottom-color:var(--g2);}
 </style>
+<script type="module">
+// ══ FIREBASE — Sincronização em tempo real entre dispositivos ══
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+const firebaseConfig = {
+  apiKey: "AIzaSyDxbGREv8zRxfz5kE6-i7TcOmZSZFvqVak",
+  authDomain: "bgc-consultoria.firebaseapp.com",
+  projectId: "bgc-consultoria",
+  storageBucket: "bgc-consultoria.firebasestorage.app",
+  messagingSenderId: "393932976811",
+  appId: "1:393932976811:web:ec750d1d74310edf7e3dee"
+};
+try{
+  const _fbApp = initializeApp(firebaseConfig);
+  const _db = getFirestore(_fbApp);
+  window._FB = { db:_db, collection, doc, setDoc, deleteDoc, onSnapshot };
+  window.dispatchEvent(new Event('firebase-ready'));
+  console.log('🔥 Firebase conectado');
+}catch(e){console.warn('Firebase indisponível, modo local:',e);}
+</script>
 </head>
 <body>
 
@@ -955,6 +975,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
       <img src="data:image/webp;base64,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" alt="Perfil" id="hd-photo">
     </div>
     <span class="hd-user-name" id="sb-user">Usuário</span>
+    <div id="sync-badge" style="display:none;align-items:center;gap:5px;background:rgba(34,197,94,.12);color:#22c55e;padding:4px 10px;border-radius:99px;font-size:10.5px;font-weight:600;margin-left:6px" title="Dados sincronizados em tempo real entre todos os dispositivos"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;animation:pulse 2s infinite"></span>Sincronizado</div>
     <div class="hd-logout" onclick="logout()" title="Sair">⏻</div>
     <div id="sb-logo-wrap" style="display:none"><img id="sb-logo" style="height:26px;border-radius:5px;display:none"></div>
   </div>
@@ -1587,7 +1608,91 @@ const K={proc:'bgc_proc',docs:'bgc_docs',munis:'bgc_munis',emps:'bgc_emps',
   agenda:'bgc_agenda',contatos:'bgc_contatos'};
 const ld=k=>{try{return JSON.parse(localStorage.getItem(k))||[];}catch{return[];}};
 const ldo=k=>{try{return JSON.parse(localStorage.getItem(k))||{};}catch{return{};}};
-const sv=(k,d)=>localStorage.setItem(k,JSON.stringify(d));
+
+// ══ SINCRONIZAÇÃO FIRESTORE ══
+// Coleções que sincronizam como listas de registros (cada item = 1 doc no Firestore)
+const SYNC_COLS={proc:'proc',docs:'docs',munis:'munis',emps:'emps',portais:'portais',parc:'parc',agenda:'agenda',contatos:'contatos'};
+// Coleções que sincronizam como objeto único (fat, cfg, vis)
+const SYNC_OBJ={fat:'_obj_fat',cfg:'_obj_cfg',vis:'_obj_vis'};
+let _fbSync=false, _fbApplying=false;
+
+function _keyFromStorage(k){return Object.keys(SYNC_COLS).find(x=>K[x]===k)||Object.keys(SYNC_OBJ).find(x=>K[x]===k)||null;}
+
+async function _pushFB(logicalKey,data){
+  if(!window._FB||_fbApplying)return;
+  const FB=window._FB;
+  try{
+    if(SYNC_COLS[logicalKey]){
+      const colName=SYNC_COLS[logicalKey];
+      // Grava cada registro como doc individual (não sobrescreve os outros)
+      for(const item of data){if(item&&item.id)await FB.setDoc(FB.doc(FB.db,colName,String(item.id)),{_json:JSON.stringify(item),_upd:Date.now()});}
+    }else if(SYNC_OBJ[logicalKey]){
+      await FB.setDoc(FB.doc(FB.db,'singletons',SYNC_OBJ[logicalKey]),{_json:JSON.stringify(data),_upd:Date.now()});
+    }
+  }catch(e){console.warn('Sync push falhou ('+logicalKey+'):',e.message);}
+}
+
+const sv=(k,d)=>{
+  localStorage.setItem(k,JSON.stringify(d));
+  const lk=_keyFromStorage(k);
+  if(lk&&_fbSync)_pushFB(lk,d);
+};
+
+// Deleta registro específico do Firestore (para exclusões)
+async function _deleteFB(logicalKey,id){
+  if(!window._FB||!_fbSync)return;
+  const colName=SYNC_COLS[logicalKey];if(!colName)return;
+  try{await window._FB.deleteDoc(window._FB.doc(window._FB.db,colName,String(id)));}catch(e){console.warn('Sync delete falhou:',e.message);}
+}
+
+// Inicia listeners em tempo real
+function iniciarFirebaseSync(){
+  if(!window._FB||_fbSync)return;
+  const FB=window._FB;_fbSync=true;
+  const varMap={proc:()=>proc,docs:()=>docs,munis:()=>munis,emps:()=>emps,portais:()=>portais,parc:()=>parc,agenda:()=>agenda,contatos:()=>contatos};
+  const setMap={proc:v=>proc=v,docs:v=>docs=v,munis:v=>munis=v,emps:v=>emps=v,portais:v=>portais=v,parc:v=>parc=v,agenda:v=>agenda=v,contatos:v=>contatos=v};
+  // Listeners de coleções
+  Object.entries(SYNC_COLS).forEach(([lk,colName])=>{
+    FB.onSnapshot(FB.collection(FB.db,colName),snap=>{
+      _fbApplying=true;
+      const arr=[];snap.forEach(d=>{try{arr.push(JSON.parse(d.data()._json));}catch{}});
+      setMap[lk](arr);localStorage.setItem(K[lk],JSON.stringify(arr));
+      _fbApplying=false;
+      _refreshTelaAtual();
+    },err=>console.warn('Listener '+colName+':',err.message));
+  });
+  // Listeners de singletons
+  Object.entries(SYNC_OBJ).forEach(([lk,docName])=>{
+    FB.onSnapshot(FB.doc(FB.db,'singletons',docName),d=>{
+      if(!d.exists())return;_fbApplying=true;
+      try{const obj=JSON.parse(d.data()._json);if(lk==='fat')fat=obj;else if(lk==='cfg')cfg=obj;else if(lk==='vis')vis=obj;localStorage.setItem(K[lk],JSON.stringify(obj));}catch{}
+      _fbApplying=false;_refreshTelaAtual();
+    },err=>console.warn('Listener '+docName+':',err.message));
+  });
+  // Envia dados locais existentes para o Firestore na primeira sincronização
+  setTimeout(()=>{
+    if(!localStorage.getItem('bgc_fb_pushed_v1')){
+      Object.keys(SYNC_COLS).forEach(lk=>_pushFB(lk,varMap[lk]()));
+      Object.keys(SYNC_OBJ).forEach(lk=>{const v=lk==='fat'?fat:lk==='cfg'?cfg:vis;_pushFB(lk,v);});
+      localStorage.setItem('bgc_fb_pushed_v1','1');
+    }
+  },2000);
+  const badge=document.getElementById('sync-badge');if(badge){badge.style.display='flex';}
+  console.log('🔄 Sincronização em tempo real ativada');
+}
+
+let _refreshTimer=null;
+function _refreshTelaAtual(){
+  clearTimeout(_refreshTimer);
+  _refreshTimer=setTimeout(()=>{
+    const vwAtiva=document.querySelector('.vw.on');if(!vwAtiva)return;
+    const id=vwAtiva.id.replace('vw-','');
+    ({dashboard:rDash,processos:rProc,faturamento:rFat,documentos:rDocs,municipios:rMunis,relacionamento:rRelac,parcerias:rParcerias,portais:rPortais,relatorios:rRel,empresas:rEmps,config:rCfg,agenda:rAgenda,modelos:rModelos})[id]?.();
+    updBadges();
+  },300);
+}
+
+window.addEventListener('firebase-ready',()=>{if(CU)iniciarFirebaseSync();});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 // ══ SEED EMPRESAS GRUPO RESSONAR ══
@@ -1867,6 +1972,7 @@ function iniciarApp(){
   }
   emps = ld(K.emps); docs = ld(K.docs);
   proc = ld(K.proc); munis = ld(K.munis);
+  if(window._FB)iniciarFirebaseSync();
   aplicarVisual();initPortais();rDash();updBadges();
   // Tenta Drive imediatamente, depois em 1s, 3s e 6s (aguarda GSI carregar)
   [500,1500,3500,6000].forEach(t=>setTimeout(()=>{
@@ -2169,7 +2275,7 @@ function salvarProc(){
   const ex=proc.find(x=>x.id===id);if(ex&&ex.criadoEm)p.criadoEm=ex.criadoEm;
   const idx=proc.findIndex(x=>x.id===id);if(idx>-1)proc[idx]=p;else proc.push(p);
   sv(K.proc,proc);cm('mo-proc');rProc();rDash();updBadges();notify('Processo salvo!');}
-function delProc(id){if(!confirm('Excluir?'))return;proc=proc.filter(x=>x.id!==id);sv(K.proc,proc);rProc();rDash();updBadges();}
+function delProc(id){if(!confirm('Excluir?'))return;proc=proc.filter(x=>x.id!==id);sv(K.proc,proc);_deleteFB('proc',id);rProc();rDash();updBadges();}
 
 // ══════════════════════════════════════════════
 // FATURAMENTO
@@ -2533,7 +2639,7 @@ function salvarDoc(){
   }else docs.push(d);
   sv(K.docs,docs);cm('mo-doc');rDocs();rDash();updBadges();notify('Documento salvo!'+(idx>-1&&d.historico?.length?' Versão anterior arquivada.':''));
 }
-function delDoc(id){if(!confirm('Excluir?'))return;docs=docs.filter(x=>x.id!==id);sv(K.docs,docs);rDocs();rDash();updBadges();}
+function delDoc(id){if(!confirm('Excluir?'))return;docs=docs.filter(x=>x.id!==id);sv(K.docs,docs);_deleteFB('docs',id);rDocs();rDash();updBadges();}
 
 // ══════════════════════════════════════════════
 // MUNICÍPIOS
@@ -2695,7 +2801,7 @@ function omMuni(id){
 }
 function muniCompleto(m){return !!(m.nome&&m.uf&&m.regiao&&m.prefeito&&(m.secretario||m.agendadora)&&(m.prefeitoTel||m.secretarioTel||m.agendadoraTel||m.contato));}
 function salvarMuni(){const id=gv('mn-id')||uid();const ex=munis.find(x=>x.id===id);const m={id,nome:gv('mn-nom'),uf:gv('mn-uf'),regiao:gv('mn-reg-nome'),curva:gv('mn-cur'),partido:gv('mn-par'),orientacao:gv('mn-ori'),prefeito:gv('mn-pre'),prefeitoTel:gv('mn-pretel'),secretario:gv('mn-sec'),secretarioTel:gv('mn-sectel'),agendadora:gv('mn-age'),agendadoraTel:gv('mn-agetel'),agendador2:gv('mn-age2'),agendador2Tel:gv('mn-age2tel'),reguladora:gv('mn-reg'),contato:gv('mn-con'),sobre:gv('mn-sobre'),obs:gv('mn-obs'),hist:ex?ex.hist:[]};m.completo=muniCompleto(m);const idx=munis.findIndex(x=>x.id===id);if(idx>-1)munis[idx]=m;else munis.push(m);sv(K.munis,munis);cm('mo-muni');if(selMuni===id)selM(id);rMunis();rDash();notify('Município salvo!');}
-function delMuni(id){if(!confirm('Excluir?'))return;munis=munis.filter(x=>x.id!==id);sv(K.munis,munis);selMuni=null;const _el_muni_det=document.getElementById('muni-det');if(_el_muni_det)_el_muni_det.innerHTML=`<div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div></div>`;rMunis();rDash();}
+function delMuni(id){if(!confirm('Excluir?'))return;munis=munis.filter(x=>x.id!==id);sv(K.munis,munis);_deleteFB('munis',id);selMuni=null;const _el_muni_det=document.getElementById('muni-det');if(_el_muni_det)_el_muni_det.innerHTML=`<div class="em"><div class="em-ic">🏛</div><div class="em-t">Selecione um município</div></div>`;rMunis();rDash();}
 function omInt(muniId){document.getElementById('mct').innerHTML=`<div class="mo op" id="mo-int"><div class="mb"><div class="mt"><span>Registrar Interação</span><span class="mx" onclick="cm('mo-int')">✕</span></div><input type="hidden" id="in-mid" value="${muniId}"><div class="fr"><div class="fg"><label>Data</label><input class="fi" type="date" id="in-dat" value="${new Date().toISOString().split('T')[0]}"></div><div class="fg"><label>Tipo</label><select class="fs" id="in-tip"><option value="phone">📞 Ligação</option><option value="whats">💬 WhatsApp</option><option value="email">✉ E-mail</option><option value="visita">🚗 Visita</option><option value="reuniao">💻 Reunião</option></select></div></div><div class="fr f1"><div class="fg"><label>Com quem</label><input class="fi" id="in-com" placeholder="Nome, cargo..."></div></div><div class="fr f1"><div class="fg"><label>Resultado / Próximos Passos</label><textarea class="fta" id="in-obs"></textarea></div></div><div class="fr f1"><div class="fg"><label>Próximo Follow-up</label><input class="fi" type="date" id="in-fup"></div></div><div class="mf"><button class="bt bt-g" onclick="cm('mo-int')">Cancelar</button><button class="bt bt-p" onclick="salvarInt()">💾 Registrar</button></div></div></div>`;}
 function salvarInt(){const muniId=gv('in-mid');const m=munis.find(x=>x.id===muniId);if(!m)return;if(!m.hist)m.hist=[];m.hist.push({id:uid(),dat:gv('in-dat'),tip:gv('in-tip'),com:gv('in-com'),obs:gv('in-obs'),fup:gv('in-fup')});sv(K.munis,munis);cm('mo-int');selM(muniId);rDash();notify('Interação registrada!');}
 function exportMuniCSV(){let csv='nome,uf,regiao,curva,partido,orientacao(D/E/C),prefeito,contato_prefeito,secretario,contato_secretario,agendador1,contato_agendador1,agendador2,contato_agendador2,reguladora,telefone_geral,sobre,obs\n';munis.forEach(m=>csv+=`"${m.nome||''}","${m.uf||''}","${m.regiao||''}","${m.curva||''}","${m.partido||''}","${m.orientacao||''}","${m.prefeito||''}","${m.prefeitoTel||''}","${m.secretario||''}","${m.secretarioTel||''}","${m.agendadora||''}","${m.agendadoraTel||''}","${m.agendador2||''}","${m.agendador2Tel||''}","${m.reguladora||''}","${m.contato||''}","${m.sobre||''}","${m.obs||''}"\n`);dlFile(csv,'municipios_bgc.csv','text/csv');}
@@ -2818,7 +2924,7 @@ function salvarParc(){
   const idx=parc.findIndex(x=>x.id===id);if(idx>-1)parc[idx]=p;else parc.push(p);
   sv(K.parc,parc);cm('mo-parc');rParcerias();rDash();notify('Parceria salva!');
 }
-function delParc(id){if(!confirm('Excluir?'))return;parc=parc.filter(x=>x.id!==id);sv(K.parc,parc);rParcerias();rDash();}
+function delParc(id){if(!confirm('Excluir?'))return;parc=parc.filter(x=>x.id!==id);sv(K.parc,parc);_deleteFB('parc',id);rParcerias();rDash();}
 
 function gerarContratoParc(id){
   const p=parc.find(x=>x.id===id);if(!p)return;
@@ -2883,7 +2989,7 @@ function salvarPortal(){
 }
 function rPortais(){const cats={Federal:'🏛',Geral:'🔍',Municipal:'🏙',Estadual:'🗺',Saúde:'🏥'};document.getElementById('l-portais').innerHTML=portais.map(p=>`<div style="background:var(--c2);border:1px solid var(--bd);border-radius:10px;padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:8px"><div style="width:34px;height:34px;border-radius:8px;background:${p.ativo?'var(--al)':'rgba(100,116,139,.1)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${cats[p.cat]||'🔗'}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${p.nome}</div><div style="font-size:10.5px;color:var(--t2)">${p.url}</div>${p.filtro?`<div style="font-size:10px;color:var(--t3)">🔎 ${p.filtro}</div>`:''}</div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;${p.ativo?'background:var(--grl);color:var(--gr2)':'background:rgba(100,116,139,.2);color:#94a3b8'}">${p.ativo?'Ativo':'Inativo'}</span><div style="display:flex;gap:4px"><button class="bt bt-p bt-xs" onclick="window.open('${p.url}','_blank')">↗ Abrir</button><button class="bt bt-d bt-xs" onclick="delPortal('${p.id}')">🗑</button></div></div></div>`).join('')||`<div class="em"><div class="em-ic">🔍</div><div class="em-t">Nenhum portal</div></div>`;}
 function addPortal(){const nome=gv('p-nome'),url=gv('p-url');if(!nome||!url){notify('Preencha nome e URL','er');return;}portais.push({id:uid(),nome,url,cat:gv('p-cat'),filtro:gv('p-filtro'),ativo:true});sv(K.portais,portais);['p-nome','p-url','p-filtro'].forEach(id=>sv2(id,''));rPortais();notify('Portal adicionado!');}
-function delPortal(id){if(!confirm('Remover?'))return;portais=portais.filter(x=>x.id!==id);sv(K.portais,portais);rPortais();}
+function delPortal(id){if(!confirm('Remover?'))return;portais=portais.filter(x=>x.id!==id);sv(K.portais,portais);_deleteFB('portais',id);rPortais();}
 
 // ══════════════════════════════════════════════
 // RELATÓRIOS
@@ -3270,7 +3376,7 @@ function omEmp(id){document.getElementById('mct').innerHTML=`<div class="mo op" 
 }
 function upEmpLogo(inp){const r=new FileReader();r.onload=e=>{const img=document.getElementById('em-lp');img.src=e.target.result;img.style.display='block';img._data=e.target.result;};r.readAsDataURL(inp.files[0]);}
 function salvarEmp(){const id=gv('em-id')||uid();const ex=emps.find(x=>x.id===id);const imgEl=document.getElementById('em-lp');const logo=imgEl&&imgEl.style.display!=='none'?imgEl.src:(ex?ex.logo:null);const e={id,raz:gv('em-raz'),fan:gv('em-fan'),cnp:gv('em-cnp'),cid:gv('em-cid'),rep:gv('em-rep'),cpf:gv('em-cpf'),tel:gv('em-tel'),ema:gv('em-ema'),drv:gv('em-drv'),logo};const idx=emps.findIndex(x=>x.id===id);if(idx>-1)emps[idx]=e;else emps.push(e);sv(K.emps,emps);cm('mo-emp');rEmps();if(!localStorage.getItem('bgc_ref_'+id)) localStorage.setItem('bgc_ref_'+id,'[]');if(idx===-1) criarBaseDocumentos(id);notify('Empresa salva!');}
-function delEmp(id){if(!confirm('Excluir?'))return;emps=emps.filter(x=>x.id!==id);sv(K.emps,emps);rEmps();}
+function delEmp(id){if(!confirm('Excluir?'))return;emps=emps.filter(x=>x.id!==id);sv(K.emps,emps);_deleteFB('emps',id);rEmps();}
 
 // ══════════════════════════════════════════════
 // CONFIG
