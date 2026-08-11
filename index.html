@@ -1946,7 +1946,7 @@ function cadastro(){
   }catch(e){showErr('ca-err','Erro ao criar conta: '+e.message);}
 }
 function login(){
-  const email=gv('li-email'),senha=gv('li-senha');
+  const email=(gv('li-email')||'').trim(),senha=(gv('li-senha')||'').trim();
   if(!email||!senha){showErr('li-err','Preencha e-mail e senha');return;}
   // Autenticação real via Firebase
   if(window._FB&&window._FB.auth){
@@ -1958,11 +1958,17 @@ function login(){
         iniciarApp();iniciarFirebaseSync();
       })
       .catch(err=>{
+        console.error('Erro de login Firebase:',err.code,err.message);
         let msg='E-mail ou senha incorretos';
-        if(err.code==='auth/invalid-email')msg='E-mail inválido';
-        else if(err.code==='auth/user-not-found')msg='Usuário não cadastrado. Crie no Firebase Console.';
+        if(err.code==='auth/invalid-email')msg='E-mail inválido (verifique se digitou corretamente)';
+        else if(err.code==='auth/user-not-found')msg='Usuário não cadastrado no Firebase';
+        else if(err.code==='auth/wrong-password')msg='Senha incorreta';
+        else if(err.code==='auth/invalid-credential')msg='E-mail ou senha não conferem. Confira no Firebase Console → Authentication → Users';
         else if(err.code==='auth/too-many-requests')msg='Muitas tentativas. Aguarde alguns minutos.';
         else if(err.code==='auth/network-request-failed')msg='Sem conexão com a internet';
+        else if(err.code==='auth/operation-not-allowed')msg='Login por e-mail/senha não está ativado no Firebase';
+        else if(err.code==='auth/configuration-not-found')msg='Authentication não configurado no projeto Firebase';
+        else msg='Erro: '+err.code;
         showErr('li-err',msg);
       });
     return;
@@ -1978,7 +1984,7 @@ function logout(){
   if(window._FB&&window._FB.auth){try{window._FB.signOut(window._FB.auth);}catch(e){}}
   CU=null;localStorage.removeItem('bgc_sess');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';
 }
-function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}}
+function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',9000);}}
 function iniciarApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
