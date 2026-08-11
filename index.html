@@ -863,6 +863,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 // ══ FIREBASE — Sincronização em tempo real entre dispositivos ══
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 const firebaseConfig = {
   apiKey: "AIzaSyDxbGREv8zRxfz5kE6-i7TcOmZSZFvqVak",
   authDomain: "bgc-consultoria.firebaseapp.com",
@@ -874,7 +875,8 @@ const firebaseConfig = {
 try{
   const _fbApp = initializeApp(firebaseConfig);
   const _db = getFirestore(_fbApp);
-  window._FB = { db:_db, collection, doc, setDoc, deleteDoc, onSnapshot };
+  const _auth = getAuth(_fbApp);
+  window._FB = { db:_db, auth:_auth, collection, doc, setDoc, deleteDoc, onSnapshot, signInWithEmailAndPassword, signOut, onAuthStateChanged };
   window.dispatchEvent(new Event('firebase-ready'));
   console.log('🔥 Firebase conectado');
 }catch(e){console.warn('Firebase indisponível, modo local:',e);}
@@ -925,12 +927,10 @@ try{
       <button class="ls-btn" onclick="cadastro()">Criar Conta</button>
     </div>
 
-    <!-- Acesso rápido master -->
-    <div style="margin-top:18px;padding:10px 14px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;font-size:11px;color:var(--t3);line-height:1.8;">
-      <strong style="color:var(--g2)">Acesso direto BGC:</strong><br>
-      E-mail: <code style="color:var(--t1)">bgc@consultoria.com</code><br>
-      Senha: <code style="color:var(--t1)">bgc2026</code>
-      <button class="ls-btn" style="margin-top:10px;padding:8px;font-size:11px;letter-spacing:1px;" onclick="document.getElementById('li-email').value='bgc@consultoria.com';document.getElementById('li-senha').value='bgc2026';ltab('in');login();">⚡ Entrar agora</button>
+    <!-- Login seguro Firebase -->
+    <div style="margin-top:18px;padding:10px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);border-radius:8px;font-size:11px;color:var(--t3);line-height:1.7;">
+      <strong style="color:#22c55e">🔒 Acesso seguro sincronizado</strong><br>
+      Entre com o e-mail e senha cadastrados. Seus dados sincronizam em tempo real entre todos os dispositivos da equipe.
     </div>
 
     <div class="ls-footer">Plataforma Inteligente de Gestão Comercial & Licitações</div>
@@ -1692,7 +1692,7 @@ function _refreshTelaAtual(){
   },300);
 }
 
-window.addEventListener('firebase-ready',()=>{if(CU)iniciarFirebaseSync();});
+// A sincronização é iniciada após autenticação (onAuthStateChanged)
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 // ══ SEED EMPRESAS GRUPO RESSONAR ══
@@ -1947,19 +1947,37 @@ function cadastro(){
 }
 function login(){
   const email=gv('li-email'),senha=gv('li-senha');
-  // Acesso master BGC (sempre funciona)
-  if(email==='bgc@consultoria.com'&&senha==='bgc2026'){
-    const u={id:'master',nome:'Bruno Gabriel Cardoso',email,role:'admin'};
-    CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();return;
+  if(!email||!senha){showErr('li-err','Preencha e-mail e senha');return;}
+  // Autenticação real via Firebase
+  if(window._FB&&window._FB.auth){
+    showErr('li-err','Entrando...');
+    window._FB.signInWithEmailAndPassword(window._FB.auth,email,senha)
+      .then(cred=>{
+        CU={id:cred.user.uid,nome:cred.user.email.split('@')[0],email:cred.user.email,role:'user'};
+        localStorage.setItem('bgc_sess',JSON.stringify(CU));
+        iniciarApp();iniciarFirebaseSync();
+      })
+      .catch(err=>{
+        let msg='E-mail ou senha incorretos';
+        if(err.code==='auth/invalid-email')msg='E-mail inválido';
+        else if(err.code==='auth/user-not-found')msg='Usuário não cadastrado. Crie no Firebase Console.';
+        else if(err.code==='auth/too-many-requests')msg='Muitas tentativas. Aguarde alguns minutos.';
+        else if(err.code==='auth/network-request-failed')msg='Sem conexão com a internet';
+        showErr('li-err',msg);
+      });
+    return;
   }
-  try{
-    const users=JSON.parse(localStorage.getItem('bgc_users')||'[]');
-    const u=users.find(x=>x.email===email&&x.senha===btoa(senha));
-    if(!u){showErr('li-err','E-mail ou senha incorretos');return;}
-    CU=u;localStorage.setItem('bgc_sess',JSON.stringify(u));iniciarApp();
-  }catch(e){showErr('li-err','Erro ao fazer login: '+e.message);}
+  // Fallback local (se Firebase não carregou) — acesso master
+  if(email==='bgc@consultoria.com'&&senha==='bgc2026'){
+    CU={id:'master',nome:'Bruno Gabriel Cardoso',email,role:'admin'};
+    localStorage.setItem('bgc_sess',JSON.stringify(CU));iniciarApp();return;
+  }
+  showErr('li-err','Sistema carregando, tente novamente em instantes');
 }
-function logout(){CU=null;localStorage.removeItem('bgc_sess');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
+function logout(){
+  if(window._FB&&window._FB.auth){try{window._FB.signOut(window._FB.auth);}catch(e){}}
+  CU=null;localStorage.removeItem('bgc_sess');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';
+}
 function showErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',4000);}}
 function iniciarApp(){
   document.getElementById('login-screen').style.display='none';
@@ -1972,7 +1990,6 @@ function iniciarApp(){
   }
   emps = ld(K.emps); docs = ld(K.docs);
   proc = ld(K.proc); munis = ld(K.munis);
-  if(window._FB)iniciarFirebaseSync();
   aplicarVisual();initPortais();rDash();updBadges();
   // Tenta Drive imediatamente, depois em 1s, 3s e 6s (aguarda GSI carregar)
   [500,1500,3500,6000].forEach(t=>setTimeout(()=>{
@@ -3491,9 +3508,29 @@ function importarDados(input){const r=new FileReader();r.onload=e=>{try{const d=
 // INIT
 // ══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  const sess=localStorage.getItem('bgc_sess');
-  if(sess){try{CU=JSON.parse(sess);iniciarApp();}catch{document.getElementById('login-screen').style.display='flex';}}
-  else document.getElementById('login-screen').style.display='flex';
+  // Autenticação persistente via Firebase: se já está logado, entra direto
+  const tentarAuth=()=>{
+    if(window._FB&&window._FB.auth){
+      window._FB.onAuthStateChanged(window._FB.auth,user=>{
+        if(user){
+          CU={id:user.uid,nome:user.email.split('@')[0],email:user.email,role:'user'};
+          localStorage.setItem('bgc_sess',JSON.stringify(CU));
+          iniciarApp();iniciarFirebaseSync();
+        }else{
+          CU=null;localStorage.removeItem('bgc_sess');
+          document.getElementById('app').style.display='none';
+          document.getElementById('login-screen').style.display='flex';
+        }
+      });
+      return true;
+    }
+    return false;
+  };
+  if(!tentarAuth()){
+    window.addEventListener('firebase-ready',tentarAuth);
+    // Fallback: se Firebase não carregar em 4s, mostra login local
+    setTimeout(()=>{if(!window._FB){const sess=localStorage.getItem('bgc_sess');if(sess){try{CU=JSON.parse(sess);iniciarApp();}catch{document.getElementById('login-screen').style.display='flex';}}else document.getElementById('login-screen').style.display='flex';}},4000);
+  }
   // Aguardar Google API
   window.addEventListener('load',()=>{
     [1000,3000,6000].forEach(t=>setTimeout(()=>{
