@@ -1321,11 +1321,19 @@ try{
     </div>
     <div class="card">
       <div class="card-title">💾 Backup & Dados</div>
-      <div style="font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.6">Dados salvos localmente. Faça backup semanal.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="bt bt-success bt-sm" onclick="expBkp()">⬇ Backup JSON</button>
-        <button class="bt bt-outline bt-sm" onclick="document.getElementById('imp-bkp').click()">⬆ Restaurar</button>
+      <div id="bkp-status" style="font-size:12px;padding:10px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;margin-bottom:12px;line-height:1.6"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="bt bt-success bt-sm" onclick="expBkp()">⬇ Baixar Backup Agora</button>
+        <button class="bt bt-outline bt-sm" onclick="document.getElementById('imp-bkp').click()">⬆ Restaurar de Arquivo</button>
         <input type="file" id="imp-bkp" accept=".json" style="display:none" onchange="impBkp(this)">
+      </div>
+      <div style="border-top:1px solid var(--bd);padding-top:12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--g2);letter-spacing:1px;margin-bottom:8px">⏱ BACKUP AUTOMÁTICO</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;margin-bottom:10px">
+          <input type="checkbox" id="bkp-auto-on" onchange="toggleBkpAuto()"> Ativar backup automático a cada 30 minutos
+        </label>
+        <div style="font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:10px">Guarda automaticamente as últimas 10 cópias no navegador. Você pode restaurar qualquer uma com 1 clique.</div>
+        <div id="bkp-historico"></div>
       </div>
       <div style="display:flex;gap:6px">
         <button class="bt bt-outline bt-xs" onclick="expMunCSV()">CSV Municípios</button>
@@ -2008,6 +2016,8 @@ function iniciarApp(){
   emps = ld(K.emps); docs = ld(K.docs);
   proc = ld(K.proc); munis = ld(K.munis);
   aplicarVisual();initPortais();rDash();updBadges();
+  iniciarBkpAuto();
+  setTimeout(()=>{const h=JSON.parse(localStorage.getItem('bgc_bkp_hist')||'[]');if(!h.length)salvarBkpLocal(true);},5000);
   // Tenta Drive imediatamente, depois em 1s, 3s e 6s (aguarda GSI carregar)
   [500,1500,3500,6000].forEach(t=>setTimeout(()=>{
     if(!driveReady&&cfg.clientId&&window.google)initDrive();
@@ -3507,7 +3517,7 @@ function expMunCSV(){
   a.click(); notify('CSV de municípios exportado!');
 }
 function expMunCSV2(){ expMunCSV(); }
-function rCfg(){sv2('cfg-cid',cfg.clientId||'');sv2('cfg-folder',cfg.folderId||'');sv2('cfg-nome-emp',vis.nomeEmp||'');/* cores v7 *//* logo v7 */updDriveBadge(driveReady); sv2('cfg-apikey',localStorage.getItem('bgc_apikey')||''); try{const _cd2=JSON.parse(localStorage.getItem('bgc_cidades')||'[]');sv2('cfg-cidades',_cd2.join(', '));}catch(e){} setTimeout(rTiposDoc,50);}
+function rCfg(){renderBkpUI();sv2('cfg-cid',cfg.clientId||'');sv2('cfg-folder',cfg.folderId||'');sv2('cfg-nome-emp',vis.nomeEmp||'');/* cores v7 *//* logo v7 */updDriveBadge(driveReady); sv2('cfg-apikey',localStorage.getItem('bgc_apikey')||''); try{const _cd2=JSON.parse(localStorage.getItem('bgc_cidades')||'[]');sv2('cfg-cidades',_cd2.join(', '));}catch(e){} setTimeout(rTiposDoc,50);}
 function salvarCfgIA(){
   const key=document.getElementById('cfg-apikey')?.value||'';
   const cids=document.getElementById('cfg-cidades')?.value||'';
@@ -3516,8 +3526,98 @@ function salvarCfgIA(){
   localStorage.setItem('bgc_cidades',JSON.stringify(cidsList));
   notify('Configurações IA salvas!'); setTimeout(rTiposDoc,50);}
 function salvarCfgDrive(){cfg.clientId=gv('cfg-cid');cfg.folderId=gv('cfg-folder');sv(K.cfg,cfg);notify('Configuração salva! Clique Conectar com Google.');}
-function expBkp(){exportarDados();}
-function exportarDados(){const d={proc,docs,munis,emps,portais,fat,parc,exportadoEm:new Date().toISOString()};dlFile(JSON.stringify(d,null,2),'bgc_backup_'+new Date().toISOString().split('T')[0]+'.json','application/json');notify('Backup exportado!');}
+// ══════════════════════════════════════════════
+// BACKUP AUTOMÁTICO
+// ══════════════════════════════════════════════
+const BKP_KEY='bgc_bkp_hist', BKP_CFG='bgc_bkp_auto', BKP_MAX=10, BKP_MIN=30;
+let _bkpTimer=null;
+
+function coletarDados(){
+  return {proc,docs,munis,emps,portais,fat,parc,agenda:typeof agenda!=='undefined'?agenda:[],contatos:typeof contatos!=='undefined'?contatos:[],cfg,vis,exportadoEm:new Date().toISOString()};
+}
+function resumoDados(d){
+  return `${(d.munis||[]).length} municípios · ${(d.emps||[]).length} empresas · ${(d.docs||[]).length} docs · ${(d.proc||[]).length} processos · ${(d.contatos||[]).length} contatos`;
+}
+function salvarBkpLocal(auto){
+  try{
+    const hist=JSON.parse(localStorage.getItem(BKP_KEY)||'[]');
+    const dados=coletarDados();
+    hist.unshift({quando:Date.now(),auto:!!auto,resumo:resumoDados(dados),dados:JSON.stringify(dados)});
+    while(hist.length>BKP_MAX)hist.pop();
+    localStorage.setItem(BKP_KEY,JSON.stringify(hist));
+    renderBkpUI();
+    return true;
+  }catch(e){
+    // Se o navegador encher, remove os mais antigos e tenta de novo
+    try{const h=JSON.parse(localStorage.getItem(BKP_KEY)||'[]');h.splice(Math.floor(h.length/2));localStorage.setItem(BKP_KEY,JSON.stringify(h));}catch{}
+    console.warn('Backup local falhou:',e.message);
+    return false;
+  }
+}
+function toggleBkpAuto(){
+  const on=document.getElementById('bkp-auto-on')?.checked;
+  localStorage.setItem(BKP_CFG,on?'1':'0');
+  iniciarBkpAuto();
+  notify(on?`Backup automático ativado (a cada ${BKP_MIN} min)`:'Backup automático desativado');
+}
+function iniciarBkpAuto(){
+  clearInterval(_bkpTimer);_bkpTimer=null;
+  if(localStorage.getItem(BKP_CFG)!=='0'){ // ativo por padrão
+    _bkpTimer=setInterval(()=>{if(CU)salvarBkpLocal(true);},BKP_MIN*60*1000);
+  }
+  renderBkpUI();
+}
+function restaurarBkp(idx){
+  const hist=JSON.parse(localStorage.getItem(BKP_KEY)||'[]');
+  const b=hist[idx];if(!b)return;
+  if(!confirm(`Restaurar backup de ${new Date(b.quando).toLocaleString('pt-BR')}?\n\n${b.resumo}\n\nOs dados atuais serão substituídos.`))return;
+  try{
+    const d=JSON.parse(b.dados);
+    if(d.proc){proc=d.proc;sv(K.proc,proc);}
+    if(d.docs){docs=d.docs;sv(K.docs,docs);}
+    if(d.munis){munis=d.munis;sv(K.munis,munis);}
+    if(d.emps){emps=d.emps;sv(K.emps,emps);}
+    if(d.portais){portais=d.portais;sv(K.portais,portais);}
+    if(d.fat){fat=d.fat;sv(K.fat,fat);}
+    if(d.parc){parc=d.parc;sv(K.parc,parc);}
+    if(d.agenda&&typeof agenda!=='undefined'){agenda=d.agenda;sv(K.agenda,agenda);}
+    if(d.contatos&&typeof contatos!=='undefined'){contatos=d.contatos;sv(K.contatos,contatos);}
+    notify('Backup restaurado com sucesso!');
+    rDash();updBadges();renderBkpUI();
+  }catch(e){notify('Erro ao restaurar: '+e.message,'er');}
+}
+function baixarBkpHist(idx){
+  const hist=JSON.parse(localStorage.getItem(BKP_KEY)||'[]');
+  const b=hist[idx];if(!b)return;
+  const dt=new Date(b.quando);
+  dlFile(b.dados,'bgc_backup_'+dt.toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json','application/json');
+}
+function renderBkpUI(){
+  const st=document.getElementById('bkp-status');
+  const chk=document.getElementById('bkp-auto-on');
+  const ct=document.getElementById('bkp-historico');
+  if(chk)chk.checked=localStorage.getItem(BKP_CFG)!=='0';
+  const hist=JSON.parse(localStorage.getItem(BKP_KEY)||'[]');
+  if(st){
+    const ult=hist[0];
+    st.innerHTML=ult
+      ? `<strong style="color:#22c55e">✓ Último backup:</strong> ${new Date(ult.quando).toLocaleString('pt-BR')}${ult.auto?' <span style="color:var(--t3)">(automático)</span>':''}<br><span style="color:var(--t3);font-size:11px">${ult.resumo}</span>`
+      : `<strong style="color:var(--go2)">⚠ Nenhum backup ainda.</strong><br><span style="color:var(--t3);font-size:11px">Clique em "Baixar Backup Agora" para criar o primeiro.</span>`;
+  }
+  if(ct){
+    ct.innerHTML=hist.length
+      ? hist.map((b,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:5px">
+          <div style="flex:1"><div style="font-size:11.5px;font-weight:500">${new Date(b.quando).toLocaleString('pt-BR')} ${b.auto?'<span style="font-size:9px;color:var(--t3)">auto</span>':'<span style="font-size:9px;color:var(--g2)">manual</span>'}</div>
+          <div style="font-size:10px;color:var(--t3)">${b.resumo}</div></div>
+          <button class="bt bt-outline bt-xs" onclick="baixarBkpHist(${i})" title="Baixar">⬇</button>
+          <button class="bt bt-p bt-xs" onclick="restaurarBkp(${i})" title="Restaurar">↺</button>
+        </div>`).join('')
+      : '<div style="font-size:11px;color:var(--t3);padding:6px 0">Nenhuma cópia guardada ainda.</div>';
+  }
+}
+
+function expBkp(){salvarBkpLocal(false);exportarDados();}
+function exportarDados(){const d=coletarDados();dlFile(JSON.stringify(d,null,2),'bgc_backup_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json','application/json');notify('Backup baixado e salvo no histórico!');}
 function impBkp(inp){importarDados(inp);}
 function importarDados(input){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.proc){proc=d.proc;sv(K.proc,proc);}if(d.docs){docs=d.docs;sv(K.docs,docs);}if(d.munis){munis=d.munis;sv(K.munis,munis);}if(d.emps){emps=d.emps;sv(K.emps,emps);}if(d.portais){portais=d.portais;sv(K.portais,portais);}if(d.fat){fat=d.fat;sv(K.fat,fat);}if(d.parc){parc=d.parc;sv(K.parc,parc);}notify('Dados importados!');rDash();}catch{notify('Erro ao importar','er');}};r.readAsText(input.files[0]);input.value='';}
 
