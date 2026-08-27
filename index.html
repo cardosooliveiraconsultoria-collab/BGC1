@@ -1724,7 +1724,17 @@ function iniciarFirebaseSync(){
   Object.entries(SYNC_OBJ).forEach(([lk,docName])=>{
     FB.onSnapshot(FB.doc(FB.db,'singletons',docName),d=>{
       if(!d.exists())return;_fbApplying=true;
-      try{const obj=JSON.parse(d.data()._json);if(lk==='fat')fat=obj;else if(lk==='cfg')cfg=obj;else if(lk==='vis')vis=obj;localStorage.setItem(K[lk],JSON.stringify(obj));}catch{}
+      try{
+        const obj=JSON.parse(d.data()._json);
+        if(lk==='fat')fat=obj;
+        else if(lk==='cfg'){
+          // Mescla: nunca perder chaves locais (clientId, folderId) que a nuvem nao tem
+          const atual=ldo(K.cfg);
+          cfg=Object.assign({},obj,Object.fromEntries(Object.entries(atual).filter(([k,v])=>v&&!obj[k])));
+        }
+        else if(lk==='vis')vis=obj;
+        localStorage.setItem(K[lk],JSON.stringify(lk==='cfg'?cfg:obj));
+      }catch{}
       _fbApplying=false;_refreshTelaAtual();
     },err=>console.warn('Listener '+docName+':',err.message));
   });
@@ -3757,8 +3767,18 @@ let _bkpDriveTimer=null, _bkpDrivePastaId=null;
 
 async function _pastaBackupDrive(){
   if(_bkpDrivePastaId)return _bkpDrivePastaId;
-  const raiz=cfg.folderId;if(!raiz)throw new Error('Pasta raiz do Drive nao configurada');
-  _bkpDrivePastaId=await getOrCreateFolder(BKP_DRIVE_PASTA,raiz);
+  // Procura a pasta de backups em qualquer lugar do Drive acessivel ao app
+  try{
+    const q="name='"+BKP_DRIVE_PASTA+"' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+    const res=await driveReq('GET','files',null,'q='+encodeURIComponent(q)+'&fields=files(id,name)&pageSize=5');
+    if(res.files&&res.files.length){_bkpDrivePastaId=res.files[0].id;return _bkpDrivePastaId;}
+  }catch(e){}
+  // Cria dentro da pasta raiz do BGC se configurada; senao, na raiz do Drive
+  const raiz=cfg.folderId||null;
+  const body={name:BKP_DRIVE_PASTA,mimeType:'application/vnd.google-apps.folder'};
+  if(raiz)body.parents=[raiz];
+  const nova=await driveReq('POST','files',body,'fields=id');
+  _bkpDrivePastaId=nova.id;
   return _bkpDrivePastaId;
 }
 async function backupParaDrive(auto){
@@ -3776,13 +3796,14 @@ async function backupParaDrive(auto){
       method:'POST',headers:{'Authorization':'Bearer '+driveToken},body:form});
     if(!res.ok)throw new Error((await res.text()).slice(0,150));
     localStorage.setItem(BKP_DRIVE_ULT,String(Date.now()));
+    if(!cfg.folderId&&_bkpDrivePastaId){/* pasta de backup existe, mantem referencia */}
     await _limparBackupsAntigos(pasta);
     if(!auto)notify('Backup enviado ao Google Drive!');
     renderBkpUI();checarAvisoBkp();
     return true;
   }catch(e){
-    console.warn('Backup Drive falhou:',e.message);
-    if(!auto)notify('Falha no backup ao Drive: '+e.message,'er');
+    console.error('Backup Drive falhou:',e);
+    if(!auto)notify('Falha no backup: '+(e.message||e),'er');
     return false;
   }
 }
