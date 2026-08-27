@@ -863,7 +863,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;}
 // ══ FIREBASE — Sincronização em tempo real entre dispositivos ══
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 const firebaseConfig = {
   apiKey: "AIzaSyDxbGREv8zRxfz5kE6-i7TcOmZSZFvqVak",
   authDomain: "bgc-consultoria.firebaseapp.com",
@@ -876,7 +876,7 @@ try{
   const _fbApp = initializeApp(firebaseConfig);
   const _db = getFirestore(_fbApp);
   const _auth = getAuth(_fbApp);
-  window._FB = { db:_db, auth:_auth, collection, doc, setDoc, deleteDoc, onSnapshot, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+  window._FB = { db:_db, auth:_auth, collection, doc, setDoc, deleteDoc, onSnapshot, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail };
   window.dispatchEvent(new Event('firebase-ready'));
   console.log('🔥 Firebase conectado');
 }catch(e){console.warn('Firebase indisponível, modo local:',e);}
@@ -910,7 +910,7 @@ try{
       </div>
       <div class="ls-err" id="li-err"></div>
       <button class="ls-btn" onclick="login()">Entrar</button>
-      <div class="ls-forgot"><a href="#">Esqueceu a senha?</a></div>
+      <div class="ls-forgot"><a href="#" onclick="event.preventDefault();esqueciSenha()">Esqueceu a senha? Receber link por e-mail</a></div>
     </div>
 
     <div class="ls-form" id="lf-up">
@@ -1652,8 +1652,13 @@ async function _pushFB(logicalKey,data){
 }
 
 const sv=(k,d)=>{
-  localStorage.setItem(k,JSON.stringify(d));
   const lk=_keyFromStorage(k);
+  // Marca quando cada registro foi alterado localmente (protege contra sobrescrita pela nuvem)
+  if(lk&&SYNC_COLS[lk]&&Array.isArray(d)&&!_fbApplying){
+    const agora=Date.now();
+    d.forEach(item=>{if(item&&typeof item==='object')item._localUpd=agora;});
+  }
+  localStorage.setItem(k,JSON.stringify(d));
   if(lk&&_fbSync)_pushFB(lk,d);
 };
 
@@ -1682,18 +1687,36 @@ function iniciarFirebaseSync(){
   // Listeners de coleções
   Object.entries(SYNC_COLS).forEach(([lk,colName])=>{
     FB.onSnapshot(FB.collection(FB.db,colName),snap=>{
-      const arr=[];snap.forEach(d=>{try{arr.push(JSON.parse(d.data()._json));}catch{}});
+      const arr=[];const upds={};
+      snap.forEach(d=>{try{const o=JSON.parse(d.data()._json);arr.push(o);upds[String(o.id)]=d.data()._upd||0;}catch{}});
       const local=varMap[lk]()||[];
-      // PROTEÇÃO: nunca deixar a nuvem vazia apagar dados locais existentes.
-      // Nesse caso, envia os dados locais para a nuvem em vez de apagá-los.
+      // PROTEÇÃO 1: nuvem vazia nunca apaga dados locais
       if(arr.length===0&&local.length>0){
         console.warn('Nuvem vazia para '+colName+' — enviando '+local.length+' registros locais');
         _pushFB(lk,local);
         return;
       }
+      // PROTEÇÃO 2: registro local editado mais recentemente vence o da nuvem
+      const mapNuvem={};arr.forEach(o=>{if(o&&o.id!=null)mapNuvem[String(o.id)]=o;});
+      const reenviar=[];
+      local.forEach(lo=>{
+        if(!lo||lo.id==null)return;
+        const id=String(lo.id);
+        const nuvem=mapNuvem[id];
+        const localUpd=lo._localUpd||0;
+        if(!nuvem){
+          // Existe localmente mas não na nuvem: se foi editado aqui, reenvia em vez de sumir
+          if(localUpd>0){mapNuvem[id]=lo;reenviar.push(lo);}
+        }else if(localUpd>(upds[id]||0)){
+          // Versão local é mais nova: mantém e reenvia
+          mapNuvem[id]=lo;reenviar.push(lo);
+        }
+      });
+      const final=Object.values(mapNuvem);
       _fbApplying=true;
-      setMap[lk](arr);localStorage.setItem(K[lk],JSON.stringify(arr));
+      setMap[lk](final);localStorage.setItem(K[lk],JSON.stringify(final));
       _fbApplying=false;
+      if(reenviar.length){console.warn('Preservando '+reenviar.length+' registro(s) local(is) mais recente(s) em '+colName);_pushFB(lk,reenviar);}
       _refreshTelaAtual();
     },err=>console.warn('Listener '+colName+':',err.message));
   });
@@ -2072,6 +2095,24 @@ function login(){
     localStorage.setItem('bgc_sess',JSON.stringify(CU));iniciarApp();return;
   }
   showErr('li-err','Sistema carregando, tente novamente em instantes');
+}
+function esqueciSenha(){
+  let email=(gv('li-email')||'').trim();
+  email=prompt('Informe o e-mail cadastrado para receber o link de redefinicao de senha:',email);
+  if(!email)return;
+  email=email.trim();
+  if(!window._FB||!window._FB.sendPasswordResetEmail){showErr('li-err','Sistema carregando, tente em 3 segundos');return;}
+  showErr('li-err','Enviando e-mail...');
+  window._FB.sendPasswordResetEmail(window._FB.auth,email)
+    .then(()=>{showErr('li-err','✓ E-mail enviado para '+email+'. Verifique a caixa de entrada e o spam.');})
+    .catch(err=>{
+      let m='Erro ao enviar';
+      if(err.code==='auth/user-not-found')m='Este e-mail nao esta cadastrado no sistema';
+      else if(err.code==='auth/invalid-email')m='E-mail invalido';
+      else if(err.code==='auth/too-many-requests')m='Muitas tentativas. Aguarde alguns minutos.';
+      else m='Erro: '+err.code;
+      showErr('li-err',m);
+    });
 }
 function logout(){
   if(window._FB&&window._FB.auth){try{window._FB.signOut(window._FB.auth);}catch(e){}}
