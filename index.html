@@ -2418,12 +2418,20 @@ function exportFatCSV(){const ano=parseInt(gv('f-ano-fat'))||new Date().getFullY
 // BASE AUTOMÁTICA DE DOCUMENTOS POR EMPRESA
 // ──────────────────────────────────────────────
 const TIPOS_DOC_PADRAO = [
+  // Certidões fiscais e trabalhistas
   'CND Federal','CND Estadual','CND Municipal',
   'Certidão FGTS','Certidão Trabalhista',
-  'Alvará de Funcionamento','Alvará Sanitário',
-  'Contrato Social','Procuração',
-  'RG/CPF Representante','Balanço Patrimonial',
-  'CNES','CRM/CRO','Licença Sanitária'
+  // Certidões judiciais e de idoneidade
+  'Certidão Falência','Certidão CGU','Certidão CGU/TCU','Certidão CNJ','Certidão TCE',
+  // Habilitação jurídica
+  'Contrato Social','Cartão CNPJ','Procuração','RG/CPF Representante',
+  // Habilitação técnica (saúde)
+  'CNES','CRM/CRO','Alvará Sanitário','Licença Sanitária',
+  'Alvará de Funcionamento','Responsável Técnico',
+  // Habilitação econômico-financeira
+  'Balanço Patrimonial','Certidão Simplificada JUCEMG/JUCEB','SICAF',
+  // Documentos do processo
+  'Declaração Unificada','Proposta Comercial','Tabela de Preços'
 ];
 // Tipos dinâmicos — editáveis em Configurações
 function getTiposDoc(){
@@ -3595,11 +3603,31 @@ function salvarCfgDrive(){cfg.clientId=gv('cfg-cid');cfg.folderId=gv('cfg-folder
 // EMISSÃO DE CNDs — painel de apoio
 // ══════════════════════════════════════════════
 const ORGAOS_CND=[
-  {id:'federal',nome:'CND Federal (Receita/PGFN)',url:'https://solucoes.receita.fazenda.gov.br/servicos/certidaointernet/pj/emitir',tipo:'Certidão Federal',uf:'todas',dica:'Informe o CNPJ e resolva o CAPTCHA'},
-  {id:'fgts',nome:'CRF / FGTS (Caixa)',url:'https://consulta-crf.caixa.gov.br/consultacrf/pages/consultaEmpregador.jsf',tipo:'Certidão FGTS',uf:'todas',dica:'Selecione CNPJ, informe o número e a UF'},
-  {id:'cndt',nome:'CNDT Trabalhista (TST)',url:'https://cndt-certidao.tst.jus.br/inicio.faces',tipo:'Certidão Trabalhista',uf:'todas',dica:'Informe o CNPJ e resolva o CAPTCHA'},
-  {id:'mg',nome:'CND Estadual MG (SEFAZ-MG)',url:'https://www2.fazenda.mg.gov.br/sol/ctrl/SOL/CDT/SERVICO_829?ACAO=INICIAR',tipo:'Certidão Estadual',uf:'MG',dica:'Apenas para empresas de Minas Gerais'},
-  {id:'ba',nome:'CND Estadual BA (SEFAZ-BA)',url:'https://servicos.sefaz.ba.gov.br/sistemas/DSCRE/Modulos/Publico/EmissaoCertidao.aspx',tipo:'Certidão Estadual',uf:'BA',dica:'Apenas para empresas da Bahia'}
+  // ══ FEDERAIS (todas as empresas) ══
+  {id:'federal',cat:'Federal',nome:'CND Federal — Receita Federal e PGFN',url:'https://servicos.receita.fazenda.gov.br/servicos/certidaointernet/pj/emitir',tipo:'CND Federal',uf:'todas',dica:'Unificada: tributos federais, dívida ativa da União e INSS'},
+  {id:'fgts',cat:'Federal',nome:'CRF / FGTS — Caixa Econômica',url:'https://consulta-crf.caixa.gov.br/consultacrf/pages/consultaEmpregador.jsf',tipo:'Certidão FGTS',uf:'todas',dica:'Selecione UF e informe o CNPJ (sem pontuação)'},
+  {id:'cndt',cat:'Federal',nome:'CNDT — Débitos Trabalhistas (TST)',url:'https://cndt-certidao.tst.jus.br/gerarCertidao.faces',tipo:'Certidão Trabalhista',uf:'todas',dica:'Informe o CNPJ e resolva o CAPTCHA'},
+  {id:'cgu_ceis',cat:'Federal',nome:'CEIS/CNEP — Consulta Consolidada CGU',url:'https://certidoes-apf.apps.tcu.gov.br/',tipo:'Certidão CGU/TCU',uf:'todas',dica:'Certidão consolidada TCU: CEIS, CNEP, CEPIM e inidôneos'},
+  {id:'cgu_pj',cat:'Federal',nome:'CGU — Cadastro Nacional de Empresas Punidas',url:'https://www.portaltransparencia.gov.br/sancoes/consulta',tipo:'Certidão CGU',uf:'todas',dica:'Consulta de sanções — imprima o resultado como comprovante'},
+  {id:'cnj',cat:'Federal',nome:'CNJ — Improbidade Administrativa',url:'https://www.cnj.jus.br/improbidade_adm/consultar_requerido.php',tipo:'Certidão CNJ',uf:'todas',dica:'Consulta de condenações por improbidade'},
+
+  // ══ ESTADUAIS — MINAS GERAIS ══
+  {id:'mg_estadual',cat:'Estadual MG',nome:'CND Estadual MG — SEFAZ',url:'https://www2.fazenda.mg.gov.br/sol/ctrl/SOL/CDT/SERVICO_829?ACAO=INICIAR',tipo:'CND Estadual',uf:'MG',dica:'Débitos tributários estaduais de Minas Gerais'},
+  {id:'mg_falencia',cat:'Estadual MG',nome:'Falência e Concordata MG — TJMG',url:'https://www4.tjmg.jus.br/juridico/sf/proc_pesquisaFalencia.jsp',tipo:'Certidão Falência',uf:'MG',dica:'Certidão negativa de falência, recuperação judicial e concordata'},
+  {id:'mg_tce',cat:'Estadual MG',nome:'TCE-MG — Impedidos de Licitar',url:'https://www.tce.mg.gov.br/',tipo:'Certidão TCE',uf:'MG',dica:'Consulta de fornecedores impedidos no estado'},
+
+  // ══ ESTADUAIS — BAHIA ══
+  {id:'ba_estadual',cat:'Estadual BA',nome:'CND Estadual BA — SEFAZ',url:'https://servicos.sefaz.ba.gov.br/sistemas/DSCRE/Modulos/Publico/EmissaoCertidao.aspx',tipo:'CND Estadual',uf:'BA',dica:'Débitos tributários estaduais da Bahia'},
+  {id:'ba_falencia',cat:'Estadual BA',nome:'Falência e Concordata BA — TJBA',url:'https://esaj.tjba.jus.br/sco/abrirCadastro.do',tipo:'Certidão Falência',uf:'BA',dica:'Certidão negativa de falência e recuperação judicial'},
+  {id:'ba_tce',cat:'Estadual BA',nome:'TCE-BA — Impedidos de Licitar',url:'https://www.tce.ba.gov.br/',tipo:'Certidão TCE',uf:'BA',dica:'Consulta de fornecedores impedidos no estado'},
+
+  // ══ MUNICIPAL ══
+  {id:'municipal',cat:'Municipal',nome:'CND Municipal — Prefeitura da sede',url:'',tipo:'CND Municipal',uf:'todas',dica:'Emitida no site da prefeitura onde a empresa é sediada',manual:true},
+
+  // ══ DOCUMENTOS DA EMPRESA (não são certidões online) ══
+  {id:'cnes',cat:'Documento',nome:'CNES — Cadastro Nacional de Estabelecimentos de Saúde',url:'https://cnes.datasus.gov.br/pages/estabelecimentos/consulta.jsp',tipo:'CNES',uf:'todas',dica:'Consulte pelo CNPJ e imprima a ficha do estabelecimento'},
+  {id:'cnpj_cartao',cat:'Documento',nome:'Cartão CNPJ — Comprovante de Inscrição',url:'https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/cnpjreva_solicitacao.asp',tipo:'Cartão CNPJ',uf:'todas',dica:'Comprovante de inscrição e situação cadastral'},
+  {id:'sicaf',cat:'Documento',nome:'SICAF — Situação do Fornecedor',url:'https://www3.comprasnet.gov.br/sicaf-web/index.jsf',tipo:'SICAF',uf:'todas',dica:'Exige certificado digital ou login gov.br'}
 ];
 
 function painelCNDs(){
@@ -3621,28 +3649,39 @@ function rCNDLista(){
   const ct=document.getElementById('cnd-lista');if(!ct||!emp)return;
   const ufEmp=(emp.uf||'MG').toUpperCase();
   const lista=ORGAOS_CND.filter(o=>o.uf==='todas'||o.uf===ufEmp);
-  ct.innerHTML=`<div style="font-size:11px;color:var(--t3);margin-bottom:10px">CNPJ: <strong style="color:var(--t1);font-family:monospace">${emp.cnpj||'—'}</strong> · ${emp.raz||''}</div>`
-   + lista.map(o=>{
+  const cats=[...new Set(lista.map(o=>o.cat))];
+  let html=`<div style="font-size:11px;color:var(--t3);margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px">CNPJ: <strong style="color:var(--t1);font-family:monospace">${emp.cnpj||'—'}</strong> · ${emp.raz||''} · <span class="pl pl-x" style="font-size:9px">${ufEmp}</span></div>`;
+  cats.forEach(cat=>{
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--g2);letter-spacing:1.5px;margin:14px 0 7px;text-transform:uppercase">${cat}</div>`;
+    lista.filter(o=>o.cat===cat).forEach(o=>{
       const doc=docs.find(d=>d.empresa===empId&&d.tipo===o.tipo);
       const dv=doc&&doc.vencimento?dias(doc.vencimento):null;
-      const st=dv===null?'<span class="pl pl-x" style="font-size:9px">sem registro</span>'
-        :dv<0?'<span class="pl pl-dv" style="font-size:9px">vencida</span>'
+      const temArq=doc&&(doc.drv||doc.fileId);
+      const st=dv===null?(temArq?'<span class="pl pl-ca" style="font-size:9px">anexado</span>':'<span class="pl pl-x" style="font-size:9px">pendente</span>')
+        :dv<0?'<span class="pl pl-dv" style="font-size:9px">vencida há '+Math.abs(dv)+'d</span>'
         :dv<=15?`<span class="pl pl-dv" style="font-size:9px">vence em ${dv}d</span>`
         :dv<=30?`<span class="pl pl-al" style="font-size:9px">vence em ${dv}d</span>`
-        :`<span class="pl pl-ca" style="font-size:9px">válida até ${fmtD(doc.vencimento)}</span>`;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:7px;border-left:3px solid ${dv===null||dv<0?'var(--re2)':dv<=30?'var(--go2)':'var(--gr2)'}">
+        :`<span class="pl pl-ca" style="font-size:9px">válida ${dv}d</span>`;
+      const cor=dv!==null&&dv<0?'var(--re2)':dv!==null&&dv<=30?'var(--go2)':temArq?'var(--gr2)':'var(--bd)';
+      const btn=o.manual
+        ? `<span style="font-size:10px;color:var(--t3);padding:0 8px">site da prefeitura</span>`
+        : `<button class="bt bt-p bt-xs" onclick="abrirOrgao('${o.url}','${(emp.cnpj||'').replace(/[^0-9]/g,'')}')">🔗 Abrir</button>`;
+      html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;border-left:3px solid ${cor}">
         <div style="flex:1">
           <div style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px">${o.nome} ${st}</div>
           <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${o.dica}</div>
         </div>
-        <button class="bt bt-outline bt-xs" onclick="copiarCNPJ('${(emp.cnpj||'').replace(/[^0-9]/g,'')}')" title="Copiar CNPJ só com números">📋 CNPJ</button>
-        <button class="bt bt-p bt-xs" onclick="abrirOrgao('${o.url}','${(emp.cnpj||'').replace(/[^0-9]/g,'')}')">🔗 Abrir</button>
+        ${temArq?`<a href="${doc.drv}" target="_blank" class="bt bt-outline bt-xs" title="Ver arquivo atual">📄</a>`:''}
+        ${btn}
       </div>`;
-    }).join('')
-   + `<div style="margin-top:12px;display:flex;gap:8px">
-        <button class="bt bt-success bt-sm" onclick="abrirTodosOrgaos()">🚀 Abrir todos os sites desta empresa</button>
-      </div>
-      <div style="font-size:11px;color:var(--t3);margin-top:10px;line-height:1.6">Depois de baixar os PDFs, cadastre-os em <strong>+ Novo Documento</strong> com a nova data de validade — o sistema volta a monitorar o vencimento automaticamente.</div>`;
+    });
+  });
+  html+=`<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="bt bt-success bt-sm" onclick="abrirTodosOrgaos()">🚀 Abrir todos os sites</button>
+      <button class="bt bt-outline bt-sm" onclick="copiarCNPJ('${(emp.cnpj||'').replace(/[^0-9]/g,'')}')">📋 Copiar CNPJ</button>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-top:10px;line-height:1.6">Após baixar os PDFs, faça o <strong>Upload</strong> em Gestão de Documentos com a nova validade — o sistema volta a monitorar os vencimentos.</div>`;
+  ct.innerHTML=html;
 }
 
 function copiarCNPJ(cnpj){
@@ -3656,7 +3695,7 @@ function abrirOrgao(url,cnpj){
 function abrirTodosOrgaos(){
   const empId=gv('cnd-emp'),emp=emps.find(e=>e.id===empId);if(!emp)return;
   const ufEmp=(emp.uf||'MG').toUpperCase();
-  const lista=ORGAOS_CND.filter(o=>o.uf==='todas'||o.uf===ufEmp);
+  const lista=ORGAOS_CND.filter(o=>(o.uf==='todas'||o.uf===ufEmp)&&o.url&&!o.manual);
   const cnpj=(emp.cnpj||'').replace(/[^0-9]/g,'');
   if(cnpj)navigator.clipboard.writeText(cnpj).catch(()=>{});
   lista.forEach((o,i)=>setTimeout(()=>window.open(o.url,'_blank'),i*400));
