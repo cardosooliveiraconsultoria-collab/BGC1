@@ -2615,15 +2615,22 @@ function rDocs(){
     html+=`<div style="padding:6px 16px;font-size:10.5px;color:var(--t3);background:var(--bd2)">☑ Clique no documento para selecioná-lo. Selecione mais de um para baixar como checklist.</div>`;
     ddocs.forEach(d=>{
       const dv=dias(d.vencimento);let st,scl;
-      if(!d.vencimento){st='Não vence';scl='pl-aq';}else if(dv<=0){st='VENCIDO';scl='pl-dv';}else if(dv<=15){st=dv+'d crítico';scl='pl-dv';}else if(dv<=30){st=dv+'d atenção';scl='pl-ag';}else{st=dv+'d OK';scl='pl-at';}
-      const drv=d.drv?`<a href="${d.drv}" target="_blank" class="drive-link" onclick="event.stopPropagation()">📄 Drive</a>`:(driveReady?`<button class="bt bt-drive bt-xs" onclick="event.stopPropagation();omUploadDoc('${d.id}')">⬆ Upload</button>`:`<span style="color:var(--t3);font-size:10.5px">Sem arquivo</span>`);
+      if(d.naovence){st='Não vence';scl='pl-aq';}
+      else if(!d.vencimento){st='⚠ Informar validade';scl='pl-ag';}
+      else if(dv<=0){st='VENCIDO há '+Math.abs(dv)+'d';scl='pl-dv';}
+      else if(dv<=15){st=dv+'d crítico';scl='pl-dv';}
+      else if(dv<=30){st=dv+'d atenção';scl='pl-ag';}
+      else{st=dv+'d OK';scl='pl-at';}
+      const fid=d.fileId||(d.drv&&d.drv.match(/\/d\/([^\/]+)/)||[])[1];
+      const dlUrl=fid?`https://drive.google.com/uc?export=download&id=${fid}`:d.drv;
+      const drv=(d.drv||d.fileId)?`<a href="${dlUrl}" target="_blank" class="bt bt-success bt-xs" onclick="event.stopPropagation()" title="Baixar arquivo">⬇ Baixar</a>`:(driveReady?`<button class="bt bt-drive bt-xs" onclick="event.stopPropagation();omUploadDoc('${d.id}')">⬆ Upload</button>`:`<span style="color:var(--t3);font-size:10.5px">Sem arquivo</span>`);
       const sel=_docsSel[d.id]?'doc-sel':'';
       html+=`<div class="doc-row ${sel}" style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--bd2);font-size:12px;cursor:pointer;transition:background .12s" onclick="toggleDocSel('${d.id}',this)">
         <div style="width:16px;height:16px;border:1.5px solid var(--gc);border-radius:3px;flex-shrink:0;background:${_docsSel[d.id]?'var(--gc)':'transparent'};display:flex;align-items:center;justify-content:center">
           ${_docsSel[d.id]?'<span style="color:#fff;font-size:10px;font-weight:700">✓</span>':''}
         </div>
-        <div style="flex:2;font-weight:500">${d.tipo}${!d.vencimento&&!d.drv?'<span style="font-size:9px;color:var(--go2);margin-left:6px;font-weight:700">PENDENTE</span>':''}</div>
-        <div style="flex:1">${fmtD(d.vencimento)||'—'}</div>
+        <div style="flex:2;font-weight:500">${d.tipo}${!d.vencimento&&!d.naovence?'<span style="font-size:9px;color:var(--go2);margin-left:6px;font-weight:700">SEM VALIDADE</span>':''}</div>
+        <div style="flex:1;font-size:11.5px">${d.vencimento?fmtD(d.vencimento):'<span style="color:var(--go2)">— informar —</span>'}${d.emissao?`<div style="font-size:9.5px;color:var(--t3)">emissão ${fmtD(d.emissao)}</div>`:''}</div>
         <div style="flex:1"><span class="pl ${scl}">${st}</span></div>
         <div onclick="event.stopPropagation()">${drv}</div>
         <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
