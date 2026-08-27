@@ -1327,8 +1327,17 @@ try{
         <button class="bt bt-outline bt-sm" onclick="document.getElementById('imp-bkp').click()">⬆ Restaurar de Arquivo</button>
         <input type="file" id="imp-bkp" accept=".json" style="display:none" onchange="impBkp(this)">
       </div>
+      <div style="border-top:1px solid var(--bd);padding-top:12px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#22c55e;letter-spacing:1px;margin-bottom:8px">☁ BACKUP NO GOOGLE DRIVE <span style="color:var(--t3);font-weight:400;letter-spacing:0">(cópia externa — protege até se o computador falhar)</span></div>
+        <div id="bkp-drive-status" style="font-size:11.5px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="bt bt-success bt-sm" onclick="backupParaDrive(false)">☁ Enviar ao Drive agora</button>
+          <button class="bt bt-p bt-sm" onclick="listarBackupsDrive()">↺ Restaurar backup do Drive</button>
+        </div>
+        <div id="bkp-drive-lista"></div>
+      </div>
       <div style="border-top:1px solid var(--bd);padding-top:12px;margin-bottom:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--g2);letter-spacing:1px;margin-bottom:8px">⏱ BACKUP AUTOMÁTICO</div>
+        <div style="font-size:11px;font-weight:700;color:var(--g2);letter-spacing:1px;margin-bottom:8px">⏱ BACKUP LOCAL AUTOMÁTICO <span style="color:var(--t3);font-weight:400;letter-spacing:0">(neste navegador)</span></div>
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;margin-bottom:10px">
           <input type="checkbox" id="bkp-auto-on" onchange="toggleBkpAuto()"> Ativar backup automático a cada 30 minutos
         </label>
@@ -2081,7 +2090,7 @@ function iniciarApp(){
   emps = ld(K.emps); docs = ld(K.docs);
   proc = ld(K.proc); munis = ld(K.munis);
   aplicarVisual();initPortais();rDash();updBadges();
-  iniciarBkpAuto();
+  iniciarBkpAuto();iniciarBkpDrive();setTimeout(checarAvisoBkp,8000);
   // Conecta o Drive automaticamente (usa sessão salva ou reconecta em silêncio)
   [300,1200,3000,6000].forEach(t=>setTimeout(()=>{
     if(cfg.clientId&&window.google&&!driveReady)initDrive();
@@ -3701,6 +3710,121 @@ function abrirTodosOrgaos(){
   notify(`${lista.length} sites abertos · CNPJ ${cnpj} copiado`);
 }
 const BKP_KEY='bgc_bkp_hist', BKP_CFG='bgc_bkp_auto', BKP_MAX=10, BKP_MIN=30;
+// ══ BACKUP NO GOOGLE DRIVE — terceira camada de proteção ══
+const BKP_DRIVE_MAX=30, BKP_DRIVE_PASTA='_BACKUPS_BGC', BKP_DRIVE_ULT='bgc_bkp_drive_ult';
+let _bkpDriveTimer=null, _bkpDrivePastaId=null;
+
+async function _pastaBackupDrive(){
+  if(_bkpDrivePastaId)return _bkpDrivePastaId;
+  const raiz=cfg.folderId;if(!raiz)throw new Error('Pasta raiz do Drive nao configurada');
+  _bkpDrivePastaId=await getOrCreateFolder(BKP_DRIVE_PASTA,raiz);
+  return _bkpDrivePastaId;
+}
+async function backupParaDrive(auto){
+  if(!driveReady||!driveToken){if(!auto)notify('Conecte o Drive primeiro','er');return false;}
+  try{
+    const pasta=await _pastaBackupDrive();
+    const dados=coletarDados();
+    const agora=new Date();
+    const nome='BGC_backup_'+agora.toISOString().slice(0,16).replace(/[:T]/g,'-')+(auto?'_auto':'_manual')+'.json';
+    const meta={name:nome,parents:[pasta],description:resumoDados(dados)};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+    form.append('file',new Blob([JSON.stringify(dados)],{type:'application/json'}));
+    const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{
+      method:'POST',headers:{'Authorization':'Bearer '+driveToken},body:form});
+    if(!res.ok)throw new Error((await res.text()).slice(0,150));
+    localStorage.setItem(BKP_DRIVE_ULT,String(Date.now()));
+    await _limparBackupsAntigos(pasta);
+    if(!auto)notify('Backup enviado ao Google Drive!');
+    renderBkpUI();checarAvisoBkp();
+    return true;
+  }catch(e){
+    console.warn('Backup Drive falhou:',e.message);
+    if(!auto)notify('Falha no backup ao Drive: '+e.message,'er');
+    return false;
+  }
+}
+async function _limparBackupsAntigos(pasta){
+  try{
+    const q=`'${pasta}' in parents and trashed=false`;
+    const res=await driveReq('GET','files',null,`q=${encodeURIComponent(q)}&fields=files(id,name,createdTime)&orderBy=createdTime desc&pageSize=100`);
+    const arqs=res.files||[];
+    if(arqs.length<=BKP_DRIVE_MAX)return;
+    for(const f of arqs.slice(BKP_DRIVE_MAX)){
+      await fetch('https://www.googleapis.com/drive/v3/files/'+f.id,{method:'DELETE',headers:{'Authorization':'Bearer '+driveToken}});
+    }
+  }catch(e){console.warn('Limpeza de backups antigos falhou:',e.message);}
+}
+async function listarBackupsDrive(){
+  const ct=document.getElementById('bkp-drive-lista');if(!ct)return;
+  if(!driveReady){ct.innerHTML='<div style="font-size:11px;color:var(--go2);padding:8px 0">Conecte o Google Drive para ver os backups da nuvem.</div>';return;}
+  ct.innerHTML='<div style="font-size:11px;color:var(--t3);padding:8px 0">Carregando backups do Drive...</div>';
+  try{
+    const pasta=await _pastaBackupDrive();
+    const q=`'${pasta}' in parents and trashed=false`;
+    const res=await driveReq('GET','files',null,`q=${encodeURIComponent(q)}&fields=files(id,name,createdTime,description)&orderBy=createdTime desc&pageSize=50`);
+    const arqs=res.files||[];
+    if(!arqs.length){ct.innerHTML='<div style="font-size:11px;color:var(--t3);padding:8px 0">Nenhum backup no Drive ainda. Clique em "Enviar ao Drive agora".</div>';return;}
+    ct.innerHTML=arqs.map(f=>{
+      const dt=new Date(f.createdTime);
+      const isAuto=f.name.indexOf('_auto')>-1;
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px;margin-bottom:5px">'+
+        '<div style="flex:1"><div style="font-size:11.5px;font-weight:500">&#9729; '+dt.toLocaleString('pt-BR')+' '+(isAuto?'<span style="font-size:9px;color:var(--t3)">auto</span>':'<span style="font-size:9px;color:var(--g2)">manual</span>')+'</div>'+
+        '<div style="font-size:10px;color:var(--t3)">'+(f.description||'—')+'</div></div>'+
+        '<a href="https://drive.google.com/uc?export=download&id='+f.id+'" target="_blank" class="bt bt-outline bt-xs" title="Baixar">&#11015;</a>'+
+        '<button class="bt bt-p bt-xs" onclick="restaurarDoDrive(\''+f.id+'\',\''+dt.toLocaleString('pt-BR')+'\')" title="Restaurar">&#8634;</button></div>';
+    }).join('');
+  }catch(e){ct.innerHTML='<div style="font-size:11px;color:var(--re2);padding:8px 0">Erro ao listar: '+e.message+'</div>';}
+}
+async function restaurarDoDrive(fileId,quando){
+  if(!confirm('Restaurar o backup de '+quando+'?\n\nOs dados atuais serao substituidos. Uma copia de seguranca do estado atual sera guardada antes.'))return;
+  try{
+    notify('Baixando backup do Drive...');
+    const res=await fetch('https://www.googleapis.com/drive/v3/files/'+fileId+'?alt=media',{headers:{'Authorization':'Bearer '+driveToken}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    salvarBkpLocal(false);
+    if(d.proc){proc=d.proc;sv(K.proc,proc);}
+    if(d.docs){docs=d.docs;sv(K.docs,docs);}
+    if(d.munis){munis=d.munis;sv(K.munis,munis);}
+    if(d.emps){emps=d.emps;sv(K.emps,emps);}
+    if(d.portais){portais=d.portais;sv(K.portais,portais);}
+    if(d.fat){fat=d.fat;sv(K.fat,fat);}
+    if(d.parc){parc=d.parc;sv(K.parc,parc);}
+    if(d.agenda&&typeof agenda!=='undefined'){agenda=d.agenda;sv(K.agenda,agenda);}
+    if(d.contatos&&typeof contatos!=='undefined'){contatos=d.contatos;sv(K.contatos,contatos);}
+    notify('Backup restaurado do Drive!');
+    rDash();updBadges();renderBkpUI();
+  }catch(e){notify('Erro ao restaurar: '+e.message,'er');}
+}
+function iniciarBkpDrive(){
+  clearInterval(_bkpDriveTimer);
+  _bkpDriveTimer=setInterval(()=>{if(CU&&driveReady)backupParaDrive(true);},BKP_MIN*60*1000);
+  setTimeout(()=>{if(CU&&driveReady)backupParaDrive(true);},120000);
+}
+function horasSemBkpDrive(){
+  const ult=parseInt(localStorage.getItem(BKP_DRIVE_ULT)||'0');
+  if(!ult)return 9999;
+  return Math.floor((Date.now()-ult)/3600000);
+}
+function checarAvisoBkp(){
+  const h=horasSemBkpDrive();
+  let el=document.getElementById('aviso-bkp');
+  if(h>=72){
+    if(!el){
+      el=document.createElement('div');el.id='aviso-bkp';
+      el.style.cssText='position:fixed;bottom:16px;right:16px;z-index:8000;background:linear-gradient(135deg,#7f1d1d,#991b1b);border:1px solid #ef4444;border-radius:10px;padding:12px 16px;max-width:330px;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+      document.body.appendChild(el);
+    }
+    el.innerHTML='<div style="display:flex;align-items:flex-start;gap:10px"><div style="font-size:20px">&#9888;</div><div style="flex:1">'+
+      '<div style="font-size:12.5px;font-weight:700;color:#fff;margin-bottom:3px">Backup no Drive desatualizado</div>'+
+      '<div style="font-size:11px;color:#fecaca;line-height:1.5;margin-bottom:8px">'+(h>=9999?'Nenhum backup enviado ao Drive ainda.':'Ultimo backup ha '+h+' horas.')+' Seus dados estao sem copia externa.</div>'+
+      '<button class="bt bt-success bt-xs" onclick="backupParaDrive(false)">&#9729; Fazer backup agora</button> '+
+      '<button class="bt bt-g bt-xs" onclick="this.parentNode.parentNode.parentNode.remove()">Depois</button></div></div>';
+  }else if(el)el.remove();
+}
+setInterval(checarAvisoBkp,30*60*1000);
 let _bkpTimer=null;
 
 function coletarDados(){
@@ -3764,6 +3888,15 @@ function baixarBkpHist(idx){
   dlFile(b.dados,'bgc_backup_'+dt.toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json','application/json');
 }
 function renderBkpUI(){
+  const sd=document.getElementById('bkp-drive-status');
+  if(sd){
+    const h=horasSemBkpDrive();
+    const ult=parseInt(localStorage.getItem(BKP_DRIVE_ULT)||'0');
+    sd.innerHTML = !driveReady
+      ? '<span style="color:var(--go2)">⚠ Drive desconectado — sem cópia externa</span>'
+      : (!ult ? '<span style="color:var(--go2)">⚠ Nenhum backup enviado ao Drive ainda</span>'
+        : '<span style="color:'+(h>=72?'var(--re2)':'#22c55e')+'">'+(h>=72?'⚠':'✓')+' Último backup no Drive: '+new Date(ult).toLocaleString('pt-BR')+(h>=1?' ('+h+'h atrás)':' (agora há pouco)')+'</span>');
+  }
   const st=document.getElementById('bkp-status');
   const chk=document.getElementById('bkp-auto-on');
   const ct=document.getElementById('bkp-historico');
