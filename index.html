@@ -1696,6 +1696,24 @@ function iniciarFirebaseSync(){
         _pushFB(lk,local);
         return;
       }
+      // AUTOCURA (uma única vez por navegador): se a nuvem de documentos estiver
+      // claramente corrompida (poucos vencimentos preenchidos) em comparação com a
+      // base íntegra embutida no código, restaura a versão boa automaticamente.
+      if(lk==='docs'&&!localStorage.getItem('bgc_docs_healed_v2')){
+        try{
+          const nuvemComVenc=arr.filter(d=>d&&d.vencimento).length;
+          const seedComVenc=(typeof _SEED_DOCS!=='undefined'?_SEED_DOCS:[]).filter(d=>d&&d.vencimento).length;
+          if(seedComVenc>0&&nuvemComVenc<seedComVenc){
+            console.warn('Autocura: nuvem de documentos corrompida ('+nuvemComVenc+' vencimentos vs '+seedComVenc+' esperados). Restaurando...');
+            localStorage.setItem('bgc_docs_healed_v2','1');
+            _pushFB('docs',_SEED_DOCS);
+            docs=JSON.parse(JSON.stringify(_SEED_DOCS));
+            localStorage.setItem(K.docs,JSON.stringify(docs));
+            setTimeout(_refreshTelaAtual,500);
+            return;
+          }
+        }catch(e){console.warn('Autocura falhou:',e.message);}
+      }
       // PROTEÇÃO 2: registro local editado mais recentemente vence o da nuvem
       const mapNuvem={};arr.forEach(o=>{if(o&&o.id!=null)mapNuvem[String(o.id)]=o;});
       const reenviar=[];
