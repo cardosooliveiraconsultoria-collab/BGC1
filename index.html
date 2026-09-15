@@ -1675,6 +1675,30 @@ function iniciarFirebaseSync(){
   const FB=window._FB;_fbSync=true;
   const varMap={proc:()=>proc,docs:()=>docs,munis:()=>munis,emps:()=>emps,portais:()=>portais,parc:()=>parc,agenda:()=>agenda,contatos:()=>contatos};
   const setMap={proc:v=>proc=v,docs:v=>docs=v,munis:v=>munis=v,emps:v=>emps=v,portais:v=>portais=v,parc:v=>parc=v,agenda:v=>agenda=v,contatos:v=>contatos=v};
+  // MIGRAÇÃO v3: volta para os 52 processos agregados por convênio (sem detalhe de setor),
+  // removendo os 186 registros detalhados por setor criados na migração anterior.
+  if(!localStorage.getItem('bgc_conv_voltar_agregado_v1')){
+    try{
+      let procAtual=ld(K.proc);
+      const idsSetor=procAtual.filter(p=>String(p.id).startsWith('proc-convset-')).map(p=>p.id);
+      if(idsSetor.length){
+        procAtual=procAtual.filter(p=>!idsSetor.includes(p.id));
+        idsSetor.forEach(id=>_deleteFB('proc',id));
+      }
+      const fatAtual1=ldo(K.fat);
+      idsSetor.forEach(id=>{ delete fatAtual1[id]; });
+      const idsAtuais=new Set(procAtual.map(p=>p.id));
+      const _ag2=Date.now();
+      let add2=0;
+      _SEED_PROC_CONVENIOS.forEach(p=>{ if(!idsAtuais.has(p.id)){ procAtual.push(Object.assign({},p,{_localUpd:_ag2})); add2++; } });
+      localStorage.setItem(K.proc, JSON.stringify(procAtual)); proc=procAtual;
+      Object.entries(_SEED_FAT_CONVENIOS).forEach(([pid,meses])=>{ fatAtual1[pid]=meses; });
+      localStorage.setItem(K.fat, JSON.stringify(fatAtual1)); fat=fatAtual1;
+      _pushFB('fat', fatAtual1);
+      localStorage.setItem('bgc_conv_voltar_agregado_v1','1');
+      console.log('Migração v3: removidos '+idsSetor.length+' detalhados por setor, '+add2+' agregados por convênio restaurados');
+    }catch(e){console.warn('Migração v3 falhou:',e.message);}
+  }
   // MIGRAÇÃO v2: substitui os 52 processos agregados por convênio pelos 186 detalhados
   // por empresa+convênio+setor (evita duplicar faturamento — remove os antigos primeiro)
   if(!localStorage.getItem('bgc_conv_setor_v1')){
@@ -1722,7 +1746,7 @@ function iniciarFirebaseSync(){
     try{
       const procLocal=ld(K.proc);
       const idsLocais=new Set(procLocal.map(p=>p.id));
-      const faltando=_SEED_PROC_SETOR.filter(p=>!idsLocais.has(p.id));
+      const faltando=_SEED_PROC_CONVENIOS.filter(p=>!idsLocais.has(p.id));
       if(faltando.length){
         console.warn('Reparo: '+faltando.length+' processo(s) de setor faltando. Restaurando...');
         const agora=Date.now();
@@ -1735,7 +1759,7 @@ function iniciarFirebaseSync(){
       }
       const fatLocal=ldo(K.fat);
       let fatFaltando=false;
-      Object.entries(_SEED_FAT_SETOR).forEach(([pid,meses])=>{ if(!fatLocal[pid]){fatLocal[pid]=meses;fatFaltando=true;} });
+      Object.entries(_SEED_FAT_CONVENIOS).forEach(([pid,meses])=>{ if(!fatLocal[pid]){fatLocal[pid]=meses;fatFaltando=true;} });
       if(fatFaltando){ localStorage.setItem(K.fat,JSON.stringify(fatLocal)); fat=fatLocal; _pushFB('fat',fatLocal); }
     }catch(e){console.warn('Reparo de convênios falhou:',e.message);}
   }, 4000);
@@ -2500,7 +2524,7 @@ function rProc(){
   const q=(gv('s-proc')||'').toLowerCase(),fase=gv('f-fase'),empF=gv('f-emp-p');
   let lista=proc.filter(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio);const txt=[(emp?emp.fan||emp.raz:''),(mun?mun.nome+' '+mun.uf:''),p.esp||''].join(' ').toLowerCase();return(!q||txt.includes(q))&&(!fase||p.fase===fase)&&(!empF||p.empresa===empF);}).sort((a,b)=>new Date(b.criadoEm||0)-new Date(a.criadoEm||0));
   if(!lista.length){document.getElementById('t-proc').innerHTML=`<div class="em"><div class="em-ic">📋</div><div class="em-t">Nenhum processo</div><div class="em-s">Clique em "+ Novo Processo"</div></div>`;return;}
-  document.getElementById('t-proc').innerHTML=`<div class="tw"><table><thead><tr><th>Empresa</th><th>Município/Convênio</th><th>Setor</th><th>Fase</th><th>Faturado</th><th>Drive</th><th></th></tr></thead><tbody>${lista.map(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio),fatTot=fatAnoTotal(p.id,new Date().getFullYear())+fatAnoTotal(p.id,new Date().getFullYear()-1)+fatAnoTotal(p.id,new Date().getFullYear()-2);return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div class="av" style="width:26px;height:26px;background:${acor(emp?emp.raz:'')};font-size:9px">${ini(emp?emp.fan||emp.raz:'?')}</div>${emp?emp.fan||emp.raz:'—'}</div></td><td>${p.tipoContr&&p.tipoContr!=='Prefeitura'?`<span class="pl pl-x" style="margin-right:5px">${p.tipoContr}</span>${p.nome||(p.municipios?p.municipios.length+' municípios':'—')}`:(mun?mun.nome+' – '+mun.uf:'—')}</td><td>${p.setor?`<span style="font-size:10.5px;color:var(--t2)">${p.setor}</span>`:(p.esp||'—')}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;color:var(--gr2)">${fatTot>0?fmtV(fatTot):'—'}</td><td>${p.drv?`<a href="${p.drv}" target="_blank" class="drive-link">📁</a>`:'—'}</td><td style="white-space:nowrap"><button class="bt bt-g bt-xs" onclick="omProc('${p.id}')">✏</button><button class="bt bt-d bt-xs" onclick="delProc('${p.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table></div>`;
+  document.getElementById('t-proc').innerHTML=`<div class="tw"><table><thead><tr><th>Empresa</th><th>Convênio / Município</th><th>Fase</th><th>Faturado</th><th>Drive</th><th></th></tr></thead><tbody>${lista.map(p=>{const emp=emps.find(e=>e.id===p.empresa),mun=munis.find(m=>m.id===p.municipio),fatTot=fatAnoTotal(p.id,new Date().getFullYear())+fatAnoTotal(p.id,new Date().getFullYear()-1)+fatAnoTotal(p.id,new Date().getFullYear()-2);return`<tr><td><div style="display:flex;align-items:center;gap:7px"><div class="av" style="width:26px;height:26px;background:${acor(emp?emp.raz:'')};font-size:9px">${ini(emp?emp.fan||emp.raz:'?')}</div>${emp?emp.fan||emp.raz:'—'}</div></td><td>${p.tipoContr&&p.tipoContr!=='Prefeitura'?`<span class="pl pl-x" style="margin-right:5px">${p.tipoContr}</span>${p.nome||(p.municipios?p.municipios.length+' municípios':'—')}`:(mun?mun.nome+' – '+mun.uf:'—')}</td><td><span class="pl ${FASES[p.fase]?.cl||''}">${p.fase}</span></td><td style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;color:var(--gr2)">${fatTot>0?fmtV(fatTot):'—'}</td><td>${p.drv?`<a href="${p.drv}" target="_blank" class="drive-link">📁</a>`:'—'}</td><td style="white-space:nowrap"><button class="bt bt-g bt-xs" onclick="omProc('${p.id}')">✏</button><button class="bt bt-d bt-xs" onclick="delProc('${p.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table></div>`;
 }
 function omProc(id){
   const TIPOS_CONTR=['Prefeitura','Consórcio','Parceria','Cliente Particular','Hospital','Clínica','Cartão de desconto'];
