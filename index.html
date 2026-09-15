@@ -1681,7 +1681,8 @@ function iniciarFirebaseSync(){
       const procAtual=ld(K.proc);
       const idsExistentes=new Set(procAtual.map(p=>p.id));
       let add=0;
-      _SEED_PROC_CONVENIOS.forEach(p=>{ if(!idsExistentes.has(p.id)){ procAtual.push(p); add++; } });
+      const _agora=Date.now();
+      _SEED_PROC_CONVENIOS.forEach(p=>{ if(!idsExistentes.has(p.id)){ const cp=Object.assign({},p,{_localUpd:_agora}); procAtual.push(cp); add++; } });
       if(add>0){ localStorage.setItem(K.proc, JSON.stringify(procAtual)); proc=procAtual; }
       const fatAtual=ldo(K.fat);
       Object.entries(_SEED_FAT_CONVENIOS).forEach(([pid,meses])=>{ if(!fatAtual[pid]) fatAtual[pid]=meses; });
@@ -1691,6 +1692,29 @@ function iniciarFirebaseSync(){
       console.log('Convênios importados: '+add+' processos criados, faturamento enviado à nuvem');
     }catch(e){console.warn('Carga de convênios falhou:',e.message);}
   }
+  // REPARO (roda sempre, é seguro repetir): garante que os 52 processos de convênio existam
+  // na nuvem. Corrige o caso em que um envio anterior foi interrompido no meio do caminho.
+  setTimeout(()=>{
+    try{
+      const procLocal=ld(K.proc);
+      const idsLocais=new Set(procLocal.map(p=>p.id));
+      const faltando=_SEED_PROC_CONVENIOS.filter(p=>!idsLocais.has(p.id));
+      if(faltando.length){
+        console.warn('Reparo: '+faltando.length+' processo(s) de convênio faltando. Restaurando...');
+        const agora=Date.now();
+        const completos=faltando.map(p=>Object.assign({},p,{_localUpd:agora}));
+        const novoProc=ld(K.proc).concat(completos);
+        localStorage.setItem(K.proc, JSON.stringify(novoProc));
+        proc=novoProc;
+        _pushFB('proc',completos);
+        _refreshTelaAtual();
+      }
+      const fatLocal=ldo(K.fat);
+      let fatFaltando=false;
+      Object.entries(_SEED_FAT_CONVENIOS).forEach(([pid,meses])=>{ if(!fatLocal[pid]){fatLocal[pid]=meses;fatFaltando=true;} });
+      if(fatFaltando){ localStorage.setItem(K.fat,JSON.stringify(fatLocal)); fat=fatLocal; _pushFB('fat',fatLocal); }
+    }catch(e){console.warn('Reparo de convênios falhou:',e.message);}
+  }, 4000);
   // Restaura seed de municípios se a base local estiver vazia
   if((!munis||munis.length===0)&&typeof SEED_MUNIS!=='undefined'&&SEED_MUNIS.length){
     munis=JSON.parse(JSON.stringify(SEED_MUNIS));
@@ -1730,8 +1754,9 @@ function iniciarFirebaseSync(){
           if(seedOk>0 && nuvemOk<seedOk){
             console.warn('Autocura('+lk+'): nuvem corrompida ('+nuvemOk+' vs '+seedOk+' esperados). Restaurando...');
             localStorage.setItem('bgc_'+lk+'_healed_v2','1');
-            _pushFB(lk,seedVar);
-            const restaurado=JSON.parse(JSON.stringify(seedVar));
+            const _ag=Date.now();
+            const restaurado=JSON.parse(JSON.stringify(seedVar)).map(o=>Object.assign(o,{_localUpd:_ag}));
+            _pushFB(lk,restaurado);
             setMap[lk](restaurado);
             localStorage.setItem(K[lk],JSON.stringify(restaurado));
             setTimeout(_refreshTelaAtual,500);
