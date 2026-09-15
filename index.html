@@ -1686,8 +1686,9 @@ function iniciarFirebaseSync(){
       const fatAtual=ldo(K.fat);
       Object.entries(_SEED_FAT_CONVENIOS).forEach(([pid,meses])=>{ if(!fatAtual[pid]) fatAtual[pid]=meses; });
       localStorage.setItem(K.fat, JSON.stringify(fatAtual)); fat=fatAtual;
+      _pushFB('fat', fatAtual); // ENVIA o faturamento para a nuvem (antes só ficava local — bug corrigido)
       localStorage.setItem('bgc_conv_carregados_v1','1');
-      console.log('Convênios importados: '+add+' processos criados');
+      console.log('Convênios importados: '+add+' processos criados, faturamento enviado à nuvem');
     }catch(e){console.warn('Carga de convênios falhou:',e.message);}
   }
   // Restaura seed de municípios se a base local estiver vazia
