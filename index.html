@@ -1688,11 +1688,12 @@ function iniciarFirebaseSync(){
         const fatAtualL=ldo(K.fat);
         obsoletos.forEach(p=>{ delete fatAtualL[p.id]; });
         localStorage.setItem(K.fat, JSON.stringify(fatAtualL)); fat=fatAtualL;
-        // Exclusão real na nuvem, aguardada (não interrompe se a aba fechar durante o forEach)
+        // Exclusão real na nuvem, TODAS EM PARALELO (rápido — não depende da aba
+        // ficar aberta por minutos; completa em 1-2 segundos mesmo com centenas de itens)
         if(window._FB){
-          for(const p of obsoletos){
-            try{ await window._FB.deleteDoc(window._FB.doc(window._FB.db,'proc',_safeId(p.id))); }catch(e){}
-          }
+          await Promise.all(obsoletos.map(p=>
+            window._FB.deleteDoc(window._FB.doc(window._FB.db,'proc',_safeId(p.id))).catch(()=>{})
+          ));
         }
         _refreshTelaAtual();
         console.warn('Limpeza concluída: '+obsoletos.length+' processo(s) obsoleto(s) removido(s) da nuvem.');
