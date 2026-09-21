@@ -1672,6 +1672,34 @@ async function _deleteFB(logicalKey,id){
 // Inicia listeners em tempo real
 function iniciarFirebaseSync(){
   if(!window._FB||_fbSync)return;
+  // LIMPEZA DEFINITIVA (roda sempre que a sincronização inicia): remove qualquer
+  // resíduo de versões antigas dos processos de convênio importados da planilha,
+  // mantendo só a versão correta atual (proc-emp5-*). Usa exclusão awaited de
+  // verdade — não fire-and-forget — para não ser interrompida se a aba fechar.
+  (async()=>{
+    try{
+      const PREFIXOS_OBSOLETOS=['proc-conv-','proc-convset-','proc-emp-','proc-emp2-','proc-emp3-','proc-emp4-'];
+      let procAtualL=ld(K.proc);
+      const obsoletos=procAtualL.filter(p=>PREFIXOS_OBSOLETOS.some(pref=>String(p.id).startsWith(pref)));
+      if(obsoletos.length){
+        console.warn('Limpeza: removendo '+obsoletos.length+' processo(s) obsoleto(s) de versões antigas...');
+        procAtualL=procAtualL.filter(p=>!PREFIXOS_OBSOLETOS.some(pref=>String(p.id).startsWith(pref)));
+        localStorage.setItem(K.proc, JSON.stringify(procAtualL)); proc=procAtualL;
+        const fatAtualL=ldo(K.fat);
+        obsoletos.forEach(p=>{ delete fatAtualL[p.id]; });
+        localStorage.setItem(K.fat, JSON.stringify(fatAtualL)); fat=fatAtualL;
+        // Exclusão real na nuvem, aguardada (não interrompe se a aba fechar durante o forEach)
+        if(window._FB){
+          for(const p of obsoletos){
+            try{ await window._FB.deleteDoc(window._FB.doc(window._FB.db,'proc',_safeId(p.id))); }catch(e){}
+          }
+        }
+        _refreshTelaAtual();
+        console.warn('Limpeza concluída: '+obsoletos.length+' processo(s) obsoleto(s) removido(s) da nuvem.');
+      }
+    }catch(e){console.warn('Limpeza de processos obsoletos falhou:',e.message);}
+  })();
+
   const FB=window._FB;_fbSync=true;
   const varMap={proc:()=>proc,docs:()=>docs,munis:()=>munis,emps:()=>emps,portais:()=>portais,parc:()=>parc,agenda:()=>agenda,contatos:()=>contatos};
   const setMap={proc:v=>proc=v,docs:v=>docs=v,munis:v=>munis=v,emps:v=>emps=v,portais:v=>portais=v,parc:v=>parc=v,agenda:v=>agenda=v,contatos:v=>contatos=v};
