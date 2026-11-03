@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BGC Radar de Editais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0C1A3D; --navy-2: #16295A; --navy-3: #22396F; --gold: #C8A84B; --gold-soft: #F6EFD9; --slate: #8799BA;
+  --bg: #F3F5F9; --surface: #FFFFFF; --surface-2: #F7F8FB; --line: #E3E7EF; --line-2: #EEF1F6;
+  --ink: #111A2E; --ink-2: #47516A; --ink-3: #7B849A;
+  --novo: #0B7A3B; --novo-bg: #DFF5E7; --rec: #8A6A12; --rec-bg: #F7EED3;
+  --crit: #B42318; --crit-bg: #FDE6E3; --warn: #9A5B00; --warn-bg: #FFF1D6; --ok: #0B7A3B;
+  --link: #22396F; --bar: #22396F; --bar-hi: #C8A84B;
+  --shadow: 0 1px 2px rgba(12,26,61,.05), 0 2px 8px rgba(12,26,61,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1120; --surface: #121A2D; --surface-2: #172138; --line: #24304A; --line-2: #1C2740;
+    --ink: #E7ECF5; --ink-2: #B3BDD1; --ink-3: #8390A9; --gold-soft: #2E2817;
+    --novo: #5CD691; --novo-bg: #123222; --rec: #E2C46E; --rec-bg: #33290F;
+    --crit: #FF8B7F; --crit-bg: #3B1714; --warn: #F3C266; --warn-bg: #3A2B0E; --ok: #5CD691;
+    --link: #9DB6E8; --bar: #6F8FD0; --bar-hi: #D9B95C; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 Inter, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--link); text-decoration: none; }
+button { font: inherit; }
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+
+/* barra lateral */
+.side { background: var(--navy); color: #DCE3F2; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.marca { display: flex; gap: 12px; align-items: center; padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.logo { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(145deg, #1B2F63, #0C1A3D); border: 1.5px solid var(--gold); display: grid; place-items: center; font-weight: 700; color: var(--gold); letter-spacing: .5px; font-size: 14px; }
+.marca b { display: block; color: #fff; font-size: 15px; letter-spacing: .3px; }
+.marca span { font-size: 11.5px; color: var(--slate); letter-spacing: .4px; text-transform: uppercase; }
+.nav { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; overflow: auto; }
+.nav .grupo { font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; color: #6F7FA3; padding: 14px 12px 6px; }
+.nav button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 0; color: #C9D2E6; padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13.5px; }
+.nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+.nav button.ativa { background: rgba(200,168,75,.14); color: #fff; box-shadow: inset 3px 0 0 var(--gold); }
+.nav svg { width: 17px; height: 17px; flex: none; opacity: .85; }
+.nav .qt { margin-left: auto; font-size: 11.5px; color: #9AA8C7; font-variant-numeric: tabular-nums; }
+.nav .qt b { color: var(--gold); font-weight: 600; margin-right: 4px; }
+.side .rodape { margin-top: auto; padding: 14px 20px; font-size: 11.5px; color: #7D8DB0; border-top: 1px solid rgba(255,255,255,.08); }
+
+/* topo */
+.topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 28px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.topo h1 { margin: 0; font-size: 19px; font-weight: 650; letter-spacing: -.1px; }
+.topo .sub { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.topo .acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; font-weight: 500; }
+.btn:hover { border-color: var(--slate); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.btn.prim { background: var(--navy); border-color: var(--navy); color: #fff; }
+.btn.prim:hover { background: var(--navy-3); }
+.btn.ouro { background: var(--gold); border-color: var(--gold); color: #1B1606; }
+.btn svg { width: 15px; height: 15px; }
+main { padding: 22px 28px 60px; max-width: 1500px; }
+.aviso { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
+
+/* indicadores */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--slate); }
+.kpi.novo::before { background: var(--novo); } .kpi.rec::before { background: var(--gold); } .kpi.crit::before { background: var(--crit); }
+.kpi .rot { font-size: 11.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+.kpi .val { font-size: 30px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.kpi .det { font-size: 12px; color: var(--ink-3); }
+
+/* blocos */
+.grade2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; margin-bottom: 18px; }
+.bloco { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+.bloco > h3 { margin: 0; padding: 14px 18px 0; font-size: 14px; font-weight: 650; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.bloco > h3 small { font-weight: 500; color: var(--ink-3); font-size: 12px; }
+.bloco .corpo { padding: 12px 18px 16px; }
+.grafico { position: relative; }
+.grafico svg { display: block; width: 100%; height: 190px; }
+.tip { position: absolute; pointer-events: none; background: var(--navy); color: #fff; font-size: 12px; padding: 6px 9px; border-radius: 6px; transform: translate(-50%, -110%); white-space: nowrap; display: none; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.tabcat { width: 100%; border-collapse: collapse; }
+.tabcat td { padding: 9px 0; border-bottom: 1px solid var(--line-2); font-size: 13px; }
+.tabcat tr:last-child td { border-bottom: 0; }
+.tabcat td.n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; width: 60px; }
+.tabcat td.n.novo { color: var(--novo); }
+.tabcat tr { cursor: pointer; }
+.tabcat tr:hover td { color: var(--link); }
+.mini { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line-2); cursor: pointer; }
+.mini:last-child { border-bottom: 0; }
+.mini .d { flex: none; width: 52px; text-align: center; border-radius: 8px; padding: 4px 0; background: var(--crit-bg); color: var(--crit); font-weight: 700; font-size: 13px; line-height: 1.1; }
+.mini .d small { display: block; font-weight: 500; font-size: 10.5px; }
+.mini .t { font-size: 13px; }
+.mini .t b { font-weight: 600; }
+.mini .t span { color: var(--ink-3); font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* listas */
+.layout { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 18px; align-items: start; }
+.arvore { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); position: sticky; top: 92px; max-height: calc(100vh - 110px); overflow: auto; }
+.arvore h4 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: var(--ink-3); padding: 14px 16px 8px; }
+.reg { border-top: 1px solid var(--line-2); }
+.reg > button { width: 100%; text-align: left; border: 0; background: none; padding: 10px 16px; color: var(--ink); cursor: pointer; display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; }
+.reg > button:hover, .cid:hover { background: var(--surface-2); }
+.reg.sel > button, .cid.sel { background: var(--gold-soft); }
+.reg .seta { color: var(--ink-3); font-size: 9px; transition: transform .15s; }
+.reg.aberta .seta { transform: rotate(90deg); }
+.reg .nome { font-weight: 600; font-size: 13px; }
+.reg .uf { font-size: 10.5px; color: var(--ink-3); margin-left: 5px; }
+.barra { grid-column: 2 / 4; height: 3px; background: var(--line-2); border-radius: 2px; overflow: hidden; }
+.barra i { display: block; height: 100%; background: var(--bar); border-radius: 2px; }
+.nums { display: flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.cids { display: none; padding-bottom: 6px; }
+.reg.aberta .cids { display: block; }
+.cid { display: flex; justify-content: space-between; gap: 8px; padding: 5px 16px 5px 36px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
+.cid.zero { color: var(--ink-3); opacity: .7; }
+.cid.cons { color: var(--ink); font-weight: 500; }
+.cid.cons span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub-t { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: var(--rec); font-weight: 700; padding: 8px 16px 3px 36px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.filtros input[type=search], .filtros select { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; }
+.filtros input[type=search] { flex: 1 1 260px; min-width: 0; }
+.filtros label { font-size: 13px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; white-space: nowrap; cursor: pointer; }
+.periodo { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.periodo button { border: 0; background: none; padding: 7px 11px; font-size: 12.5px; color: var(--ink-2); cursor: pointer; border-right: 1px solid var(--line); }
+.periodo button:last-child { border-right: 0; }
+.periodo button.on { background: var(--navy); color: #fff; }
+.linha-info { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-3); margin: 6px 0 10px; }
+.chip-sel { display: inline-flex; gap: 6px; align-items: center; background: var(--gold-soft); color: var(--ink); border-radius: 14px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; }
+.chip-sel button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 15px; padding: 0; line-height: 1; }
+.divisor { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--ink-3); font-weight: 600; }
+.divisor::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.divisor.ouro { color: var(--rec); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--line); }
+.card.novo { border-left-color: var(--novo); }
+.card.rec { border-left-color: var(--gold); }
+.card.inativo { opacity: .55; }
+.card .l1 { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-bottom: 6px; }
+.card .local { font-weight: 650; font-size: 14.5px; }
+.card .org { color: var(--ink-3); font-size: 12.5px; }
+.card .pub { margin-left: auto; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.card .pub b { font-weight: 600; color: var(--ink); }
+.card .obj { margin: 4px 0 10px; color: var(--ink); line-height: 1.5; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--ink-2); }
+.card .meta b { color: var(--ink); font-weight: 600; }
+.card .acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.selo { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 2px 7px; letter-spacing: .4px; text-transform: uppercase; }
+.selo.novo { background: var(--novo); color: #fff; }
+.selo.rec { background: var(--rec-bg); color: var(--rec); }
+.selo.alta { background: #E3E9F7; color: var(--navy-3); }
+.selo.verif { background: var(--warn-bg); color: var(--warn); }
+.selo.cat { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.selo.enc { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .selo.alta { background: #1D2B4D; color: #A9C0EE; } }
+.prazo { display: inline-flex; gap: 4px; align-items: center; font-weight: 600; }
+.prazo.crit { color: var(--crit); }
+.st { font-size: 12.5px; font-weight: 600; }
+.st.aguard { color: var(--warn); } .st.ok { color: var(--ok); } .st.erro { color: var(--crit); font-weight: 500; }
+select.acomp { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 12.5px; }
+select.acomp.on { border-color: var(--gold); background: var(--gold-soft); font-weight: 600; }
+.vazio { text-align: center; color: var(--ink-3); padding: 44px 10px; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; }
+.mais { display: block; margin: 14px auto; }
+table.ed { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+table.ed th, table.ed td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line-2); vertical-align: top; font-size: 13px; }
+table.ed th { background: var(--surface-2); color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.col { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 120px; }
+.col h4 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-2); display: flex; justify-content: space-between; }
+.kc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 12.5px; box-shadow: var(--shadow); }
+.kc b { display: block; font-size: 13px; }
+.kc .o { color: var(--ink-2); margin: 4px 0 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.kc .r { display: flex; justify-content: space-between; align-items: center; gap: 6px; color: var(--ink-3); }
+.menu-mob { display: none; }
+@media (max-width: 1100px) { .grade2 { grid-template-columns: 1fr; } .kanban { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; }
+  .nav { flex-direction: row; overflow-x: auto; padding: 8px; }
+  .nav .grupo, .side .rodape { display: none; }
+  .nav button { width: auto; white-space: nowrap; }
+  .layout { grid-template-columns: 1fr; }
+  .arvore { position: static; max-height: 320px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  main, .topo { padding-left: 16px; padding-right: 16px; }
+  .card .pub { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="marca"><div class="logo">BGC</div><div><b>BGC Consultoria</b><span>Radar de Editais</span></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="rodape" id="rodape"></div>
+  </aside>
+  <div>
+    <header class="topo">
+      <div><h1 id="titulo">Visão geral</h1><div class="sub" id="sub"></div></div>
+      <div class="acoes">
+        <button class="btn" id="btExportar" title="Baixa a lista filtrada em planilha (CSV)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg>Exportar lista</button>
+        <button class="btn" id="btRecarregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Recarregar</button>
+        <button class="btn prim" id="btAtualizar" title="Roda a busca no PNCP agora (cerca de 10 minutos)">Buscar agora</button>
+      </div>
+    </header>
+    <main>
+      <div id="avisos"></div>
+      <section class="kpis" id="kpis"></section>
+      <div id="corpo"></div>
+    </main>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+// dados.js muda todo dia: o parametro evita que o navegador (ou o GitHub Pages, no sistema BGC) mostre a versao velha
+document.write('<script src="dados.js?v=' + Date.now() + '"><\/script>');
+</script>
+<script>
+const D = window.DADOS || { itens: [], regioes: [], erros: [], hoje: '', geradoEm: '' };
+const ICON = {
+  geral: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
+  principal: '<path d="M12 21s-7-4.5-9-9.5C1.6 7.6 4.3 4 8 4c1.8 0 3.2 1 4 2.2C12.8 5 14.2 4 16 4c3.7 0 6.4 3.6 5 7.5-2 5-9 9.5-9 9.5z"/>',
+  consultoria: '<path d="M4 7h16v12H4zM9 7V5h6v2M4 12h16"/>',
+  construcao: '<path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6M2 11l10-7 10 7"/>',
+  agro: '<path d="M12 21V10M12 10c0-4 3-7 8-7 0 5-3 8-8 7zM12 14c0-3-2.5-5.5-7-5.5 0 4 2.5 6 7 5.5zM6 21h12"/>',
+  extra: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  mei: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5M16 3.5l1.5 1.5 3-3"/>',
+  cultura: '<path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>',
+  acomp: '<path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/>',
+  editais: '<path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h8"/>'
+};
+const PAGINAS = [
+  { id: 'geral', nome: 'Visão geral', grupo: 'Painel' },
+  { id: 'principal', nome: 'Credenciamentos de Saúde', grupo: 'Oportunidades', cat: 'principal' },
+  { id: 'consultoria', nome: 'Consultoria', grupo: 'Oportunidades', cat: 'consultoria' },
+  { id: 'agro', nome: 'Agro e Gestão de Pessoas', grupo: 'Oportunidades', cat: 'agro' },
+  { id: 'construcao', nome: 'Construção Civil', grupo: 'Oportunidades', cat: 'construcao' },
+  { id: 'extra', nome: 'Oportunidades extras', grupo: 'Oportunidades', cat: 'extra' },
+  { id: 'mei', nome: 'MEI – Janaúba e Montes Claros', grupo: 'Oportunidades', cat: 'mei' },
+  { id: 'cultura', nome: 'Cultura MG', grupo: 'Oportunidades', cat: 'cultura' },
+  { id: 'acomp', nome: 'Acompanhamento', grupo: 'Gestão' },
+  { id: 'editais', nome: 'Editais baixados', grupo: 'Gestão' }
+];
+const SUB = {
+  cred_outros: 'Credenciamento – outros segmentos', saude_licit: 'Saúde – pregão/dispensa/concorrência', licit_outros: 'Pregão/licitação – outros',
+  cult_fomento: 'Fomento / PNAB / prêmios', cult_cred: 'Credenciamento / chamamento cultural', cult_licit: 'Contratação cultural (shows, eventos)',
+  cons_saude: 'Consultoria em saúde', cons_gestao: 'Gestão / licitações / capacitação', cons_juridica: 'Jurídica', cons_contabil: 'Contábil / tributária / financeira', cons_engenharia: 'Engenharia / ambiental', cons_outros: 'Outras consultorias',
+  cons_editais: 'Gestão de editais / captação de recursos', cons_tecnologia: 'Sistemas / aplicativos / tecnologia',
+  agro_ater: 'ATER / assistência técnica e extensão rural', agro_zootecnia: 'Zootecnia, pecuária e pastagens', agro_rh: 'RH e capacitação no agro', agro_consultoria: 'Consultoria, projetos e gestão rural',
+  obra_edificacao: 'Edificações (construção, reforma, ampliação)', obra_pavimentacao: 'Pavimentação, estradas e drenagem', obra_saneamento: 'Saneamento e água',
+  obra_manutencao: 'Manutenção predial / serviços de engenharia', obra_materiais: 'Materiais de construção', obra_outros: 'Outras obras',
+  mei_exclusiva: 'Exclusiva ME/EPP (MEI pode participar)', mei_cota: 'Cota reservada ME/EPP', mei_dispensa: 'Dispensa – pequeno valor', mei_cita: 'Cita MEI / microempreendedor'
+};
+// aba MEI: o item continua na aba de origem; esta aba mostra os marcados com mei = 'sim' (regiões de Janaúba e Montes Claros)
+const REG_MEI = ['janauba', 'montes claros'];
+// nome curto de consórcio: sigla quando houver (ex.: CISAMSF), senão o nome em caixa normal
+function nomeConsorcio(o) {
+  const s = String(o || '').trim();
+  const m = s.match(/(?:\s[-–]\s*|\()\s*([A-Z][A-Z0-9\/.-]{2,})\)?\.?\s*$/) || s.match(/\b(CIS[A-Z]{2,}|CI[A-Z]{3,}|COD[A-Z]{3,})\b/);
+  const t = s.toLowerCase().replace(/(^|\s)(\S)/g, (a, b, c) => b + c.toUpperCase()).replace(/\b(De|Do|Da|Dos|Das|E)\b/g, w => w.toLowerCase());
+  return m ? `${m[1]} · ${t.replace(/\s*[-–(].*$/, '').slice(0, 60)}` : t.slice(0, 70);
+}
+const REL = { alta: ['Relevância alta', 'alta'], verificar: ['Verificar', 'verif'], consorcio: ['Consórcio', 'verif'] };
+const NOME_REG = { 'Fora da area': 'Fora da área', 'Demais municipios MG': 'Demais municípios – MG', 'Demais municipios BA': 'Demais municípios – BA' };
+const ETAPAS = [['', 'Acompanhar…'], ['avaliacao', 'Em avaliação'], ['participar', 'Vamos participar'], ['enviado', 'Proposta enviada'], ['descartado', 'Descartado']];
+// O painel abre direto do arquivo (sempre funciona). Baixar edital, acompanhar e buscar agora usam o servidor local,
+// que o atalho liga em segundo plano; a página detecta sozinha quando ele está no ar.
+// Dentro do sistema BGC (GitHub Pages) o painel tambem procura o servidor local deste computador.
+const noServidor = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const API = noServidor ? '' : 'http://localhost:8765';
+let temServidor = noServidor;
+async function verificarServidor() {
+  const antes = temServidor;
+  try { const r = await fetch(API + '/api/ping', { cache: 'no-store' }); temServidor = r.ok; } catch (e) { temServidor = false; }
+  if (temServidor !== antes) { await carregar(); render(); }
+}
+
+// datas: NOVO = publicado hoje ou ontem; RECENTE = publicado nos últimos 30 dias
+const iso = d => d.toISOString().slice(0, 10);
+const HOJE = D.hoje || iso(new Date());
+const somaDias = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return iso(d); };
+const LIM_NOVO = somaDias(HOJE, -1), LIM_REC = somaDias(HOJE, -30);
+const pub = i => (i.publicado || '').slice(0, 10);
+const ehNovo = i => pub(i) >= LIM_NOVO;
+const ehRec = i => !ehNovo(i) && pub(i) >= LIM_REC;
+const ativo = i => i.ativo === 'sim';
+const diasAte = s => { if (!s) return null; const d = new Date(s); return isNaN(d) ? null : Math.ceil((d - new Date()) / 86400000); };
+const diasDesde = s => s ? Math.round((new Date(HOJE + 'T12:00:00') - new Date(s.slice(0, 10) + 'T12:00:00')) / 86400000) : null;
+const fData = s => { if (!s) return '—'; const d = new Date(s.length <= 10 ? s + 'T12:00:00' : s); return isNaN(d) ? '—' : d.toLocaleDateString('pt-BR'); };
+const fHora = s => { if (!s || s.length <= 10 || /T00:00:00/.test(s)) return ''; const d = new Date(s); return isNaN(d) ? '' : ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
+const haQuanto = s => { const n = diasDesde(s); return n === null ? '' : n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`; };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const nomeReg = r => NOME_REG[r] || r;
+
+let fila = {}, marc = {};
+let E = { pag: 'geral', regiao: null, cidade: null, orgao: null, busca: '', tipo: '', periodo: 'todos', ordem: 'pub', encerrados: false, abertas: new Set(), limite: 50 };
+try { const s = JSON.parse(localStorage.getItem('bgcRadar') || '{}'); if (s.pag && PAGINAS.some(p => p.id === s.pag)) E.pag = s.pag; if (s.ordem) E.ordem = s.ordem; } catch (e) {}
+const pagAtual = () => PAGINAS.find(p => p.id === E.pag);
+
+function daCat(cat, incluiEnc) { return D.itens.filter(i => (cat === 'mei' ? i.mei === 'sim' : i.cat === cat) && (incluiEnc || ativo(i))); }
+function filtrados() {
+  const p = pagAtual(); const q = norm(E.busca);
+  const lim = E.periodo === 'novos' ? LIM_NOVO : E.periodo === '7' ? somaDias(HOJE, -7) : E.periodo === '30' ? LIM_REC : '';
+  const l = daCat(p.cat, E.encerrados).filter(i =>
+    (!E.regiao || i.regiao === E.regiao) && (!E.cidade || i.cidade === E.cidade) && (!E.orgao || i.orgao === E.orgao) &&
+    (!lim || pub(i) >= lim) &&
+    (!E.tipo || (p.cat === 'principal' ? i.relev === E.tipo : p.cat === 'mei' ? i.meiTipo === E.tipo : i.sub === E.tipo)) &&
+    (!q || norm(`${i.objeto} ${i.orgao} ${i.cidade} ${i.modalidade} ${i.processo}`).includes(q)));
+  const prazo = i => { const d = diasAte(i.encerramento); return d === null || d < 0 ? 99999 : d; };
+  if (E.ordem === 'prazo') l.sort((a, b) => prazo(a) - prazo(b) || pub(b).localeCompare(pub(a)));
+  else if (E.ordem === 'cidade') l.sort((a, b) => String(a.cidade).localeCompare(String(b.cidade)) || pub(b).localeCompare(pub(a)));
+  else l.sort((a, b) => pub(b).localeCompare(pub(a)) || prazo(a) - prazo(b));
+  return l;
+}
+
+/* ---------- moldura ---------- */
+function renderNav() {
+  let h = '', g = '';
+  PAGINAS.forEach(p => {
+    if (p.grupo !== g) { g = p.grupo; h += `<div class="grupo">${g}</div>`; }
+    let qt = '';
+    if (p.cat) { const a = daCat(p.cat); const n = a.filter(ehNovo).length; qt = `<span class="qt">${n ? `<b>+${n}</b>` : ''}${a.length}</span>`; }
+    if (p.id === 'acomp') qt = `<span class="qt">${Object.values(marc).filter(m => m && m.etapa && m.etapa !== 'descartado').length || ''}</span>`;
+    if (p.id === 'editais') qt = `<span class="qt">${Object.keys(fila).length || ''}</span>`;
+    h += `<button data-pag="${p.id}" class="${E.pag === p.id ? 'ativa' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">${ICON[p.id]}</svg>${p.nome}${qt}</button>`;
+  });
+  $('#nav').innerHTML = h;
+  const g2 = D.geradoEm ? new Date(D.geradoEm) : null;
+  $('#rodape').innerHTML = g2 ? `Última busca<br><b style="color:#DCE3F2">${g2.toLocaleDateString('pt-BR')} · ${g2.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</b><br>Fonte principal: PNCP` : 'Sem dados ainda';
+}
+function renderTopo() {
+  const p = pagAtual();
+  $('#titulo').textContent = p.id === 'geral' ? 'Visão geral' : p.nome;
+  const subs = {
+    geral: 'Editais publicados recentemente e prazos — saúde, consultoria, outras oportunidades e cultura',
+    principal: 'Credenciamentos de exames e consultas nas cidades de atuação — Norte de MG, Sudoeste da BA e região de Rio Verde (GO) — e nos consórcios de saúde de cada região',
+    consultoria: 'Consultoria, assessoria, gestão, soluções especializadas, gestão de editais, implantação de sistemas e aplicativos — MG e BA',
+    agro: 'Credenciamentos e contratações de consultoria agropecuária — ATER, zootecnia e pecuária, RH e capacitação no agro — em programas federais (MAPA, ANATER, INCRA, Embrapa…) e estaduais de todo o Brasil e municipais de MG, BA e GO',
+    construcao: 'Contratação de construtoras e empreiteiras: obras, reformas, pavimentação, saneamento e serviços de engenharia nas cidades de atuação (MG, BA e GO)',
+    extra: 'Outros credenciamentos, pregões, dispensas e concorrências nas cidades de atuação',
+    mei: 'Editais que um MEI pode disputar nas regiões de Janaúba e Montes Claros — itens exclusivos ou com cota para ME/EPP, dispensas de pequeno valor e avisos que citam MEI (todos os segmentos)',
+    cultura: 'Editais culturais em Minas Gerais — federais, estaduais (SECULT, PNAB) e municipais',
+    acomp: 'Processos que a equipe está acompanhando, por etapa',
+    editais: 'Editais baixados pelo painel'
+  };
+  $('#sub').textContent = subs[p.id];
+  const av = [];
+  if (!temServidor) av.push('Ligando as funções de <b>baixar edital, acompanhar e buscar agora</b>… Se esta mensagem não sumir em alguns segundos, feche e abra de novo pelo atalho <b>Painel Credenciamentos</b>. A consulta aos editais funciona normalmente.');
+  if (D.erros && D.erros.length) av.push(`A última busca teve ${D.erros.length} falha(s) de consulta; alguns processos podem estar faltando.`);
+  $('#avisos').innerHTML = av.map(a => `<div class="aviso">${a}</div>`).join('');
+  $('#btAtualizar').disabled = !temServidor;
+  $('#btExportar').style.display = p.cat ? '' : 'none';
+}
+const kpi = (rot, val, det, cls = '') => `<div class="kpi ${cls}"><div class="rot">${rot}</div><div class="val">${val}</div><div class="det">${esc(det)}</div></div>`;
+function renderKpis() {
+  const p = pagAtual();
+  if (p.id === 'editais') {
+    const v = Object.values(fila);
+    $('#kpis').innerHTML = kpi('Editais baixados', v.length, 'pelo painel') + kpi('Analisados antes', v.filter(f => f.status === 'analisado').length, 'relatório na pasta', 'novo');
+    return;
+  }
+  if (p.id === 'acomp') {
+    const m = Object.values(marc).filter(x => x && x.etapa);
+    $('#kpis').innerHTML = ETAPAS.slice(1).map(([k, n], ix) => kpi(n, m.filter(x => x.etapa === k).length, '', ['rec', 'novo', '', 'crit'][ix])).join('');
+    return;
+  }
+  const base = p.cat ? daCat(p.cat).filter(i => (!E.regiao || i.regiao === E.regiao) && (!E.cidade || i.cidade === E.cidade) && (!E.orgao || i.orgao === E.orgao)) : D.itens.filter(ativo);
+  const prazo7 = base.filter(i => { const d = diasAte(i.encerramento); return d !== null && d >= 0 && d <= 7; }).length;
+  const onde = (E.orgao && nomeConsorcio(E.orgao)) || E.cidade || (E.regiao ? nomeReg(E.regiao) : 'abertos agora');
+  $('#kpis').innerHTML = kpi('Processos abertos', base.length, onde) +
+    kpi('Novos', base.filter(ehNovo).length, 'publicados hoje ou ontem', 'novo') +
+    kpi('Recentes', base.filter(i => pub(i) >= LIM_REC).length, 'publicados nos últimos 30 dias', 'rec') +
+    kpi('Encerram em 7 dias', prazo7, 'prazo para proposta', 'crit');
+}
+
+/* ---------- visão geral ---------- */
+function renderGeral() {
+  const at = D.itens.filter(ativo);
+  // publicações por dia (30 dias)
+  const dias = []; for (let k = 29; k >= 0; k--) dias.push(somaDias(HOJE, -k));
+  const cont = Object.fromEntries(dias.map(d => [d, 0])); at.forEach(i => { if (cont[pub(i)] !== undefined) cont[pub(i)]++; });
+  const max = Math.max(1, ...Object.values(cont)); const W = 600, H = 170, pad = 22, bw = (W - pad) / dias.length;
+  let barras = '';
+  dias.forEach((d, k) => {
+    const v = cont[d]; const h = Math.max(v ? 3 : 0, (v / max) * (H - 30)); const x = pad + k * bw + 2, y = H - 18 - h;
+    barras += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${d >= LIM_NOVO ? 'var(--bar-hi)' : 'var(--bar)'}"/>`;
+    barras += `<rect class="hit" data-d="${d}" data-v="${v}" x="${(pad + k * bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${H}" fill="transparent"/>`;
+    if (k % 5 === 4 || k === 29) barras += `<text x="${(x + (bw - 4) / 2).toFixed(1)}" y="${H - 4}" font-size="10" text-anchor="${k === 29 ? 'end' : 'middle'}" fill="var(--ink-3)">${d.slice(8, 10)}/${d.slice(5, 7)}</text>`;
+  });
+  const grid = [0.5, 1].map(f => `<line x1="${pad}" x2="${W}" y1="${(H - 18 - f * (H - 30)).toFixed(1)}" y2="${(H - 18 - f * (H - 30)).toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/><text x="0" y="${(H - 15 - f * (H - 30)).toFixed(1)}" font-size="10" fill="var(--ink-3)">${Math.round(max * f)}</text>`).join('');
+  const grafico = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Editais abertos por dia de publicação nos últimos 30 dias">${grid}<line x1="${pad}" x2="${W}" y1="${H - 18}" y2="${H - 18}" stroke="var(--line)"/>${barras}</svg>`;
+
+  const cats = PAGINAS.filter(p => p.cat).map(p => { const a = daCat(p.cat); return `<tr data-ir="${p.id}"><td>${p.nome}</td><td class="n novo">${a.filter(ehNovo).length ? '+' + a.filter(ehNovo).length : ''}</td><td class="n" style="color:var(--rec)">${a.filter(i => pub(i) >= LIM_REC).length}</td><td class="n">${a.length}</td></tr>`; }).join('');
+  const prazos = at.filter(i => { const d = diasAte(i.encerramento); return d !== null && d >= 0 && d <= 7; }).sort((a, b) => String(a.encerramento).localeCompare(String(b.encerramento))).slice(0, 8);
+  const destaques = at.filter(i => pub(i) >= LIM_REC).sort((a, b) => pub(b).localeCompare(pub(a)));
+  const nomeCat = { principal: 'Saúde', consultoria: 'Consultoria', agro: 'Agro', construcao: 'Construção', extra: 'Extra', cultura: 'Cultura' };
+  return `<div class="grade2">
+    <section class="bloco"><h3>Editais abertos por data de publicação <small>últimos 30 dias · dourado = novos</small></h3><div class="corpo grafico">${grafico}</div></section>
+    <section class="bloco"><h3>Por categoria <small>novos · 30 dias · abertos</small></h3><div class="corpo"><table class="tabcat">${cats}</table></div></section>
+  </div>
+  <div class="grade2">
+    <section><div class="divisor ouro">Em destaque — publicados nos últimos 30 dias e abertos (${destaques.length})</div>
+      ${destaques.length ? destaques.slice(0, E.limite).map(i => card(i, nomeCat[i.cat])).join('') : '<div class="vazio">Nenhum edital publicado nos últimos 30 dias.</div>'}
+      ${destaques.length > E.limite ? `<button class="btn mais" id="mais">Mostrar mais (${destaques.length - E.limite})</button>` : ''}</section>
+    <section class="bloco" style="align-self:start"><h3>Prazos que vencem em 7 dias <small>${prazos.length}</small></h3><div class="corpo">
+      ${prazos.length ? prazos.map(i => { const d = diasAte(i.encerramento); return `<div class="mini" data-foco="${esc(i.id)}"><div class="d">${d === 0 ? 'HOJE' : d}<small>${d === 0 ? '' : d === 1 ? 'dia' : 'dias'}</small></div><div class="t"><b>${esc(i.cidade || nomeReg(i.regiao))}</b> · ${nomeCat[i.cat]}<span>${esc(i.objeto)}</span></div></div>`; }).join('') : '<div style="color:var(--ink-3)">Nenhum prazo nos próximos 7 dias.</div>'}
+    </div></section>
+  </div>`;
+}
+
+/* ---------- listas por categoria ---------- */
+function renderArvore() {
+  const p = pagAtual(); const itens = daCat(p.cat, E.encerrados);
+  // cultura e agro: arvore por esfera (federal / estadual / municipal) em vez de regiao de atuacao
+  const cult = p.cat === 'cultura' || p.cat === 'agro';
+  const esferas = p.cat === 'agro' ? ['Federal', 'Estadual (MG)', 'Estadual (BA)', 'Estadual (GO)', 'Municipal (MG)', 'Municipal (BA)', 'Municipal (GO)'] : ['Federal', 'Estadual (MG)', 'Municipal (MG)'];
+  const sementes = cult ? esferas.map(r => ({ regiao: r, uf: '', cidades: [] })) : (p.cat === 'consultoria' ? [] : p.cat === 'mei' ? D.regioes.filter(r => REG_MEI.includes(norm(r.regiao))) : D.regioes);
+  const porReg = {}; const ordem = sementes.map(r => r.regiao);
+  sementes.forEach(r => porReg[r.regiao] = { uf: r.uf, cidades: Object.fromEntries(r.cidades.map(c => [c, { n: 0, nv: 0 }])), cons: {}, n: 0, nv: 0 });
+  itens.forEach(i => {
+    if (!porReg[i.regiao]) { porReg[i.regiao] = { uf: '', cidades: {}, cons: {}, n: 0, nv: 0 }; ordem.push(i.regiao); }
+    const R = porReg[i.regiao]; R.n++; if (ehNovo(i)) R.nv++;
+    if (i.consorcio === 'sim' || /cons[oó]rcio/i.test(i.orgao)) { const c = R.cons[i.orgao] = R.cons[i.orgao] || { n: 0, nv: 0 }; c.n++; if (ehNovo(i)) c.nv++; }
+    const ck = Object.keys(R.cidades).find(c => norm(c).trim() === norm(i.cidade).trim()) || i.cidade || '—';
+    R.cidades[ck] = R.cidades[ck] || { n: 0, nv: 0 }; R.cidades[ck].n++; if (ehNovo(i)) R.cidades[ck].nv++;
+  });
+  const max = Math.max(1, ...Object.values(porReg).map(r => r.n));
+  const regs = [...new Set(ordem)].filter(r => porReg[r]);
+  if (p.cat === 'consultoria') regs.sort((a, b) => (/^Demais/.test(a) - /^Demais/.test(b)) || porReg[b].n - porReg[a].n);
+  let h = `<h4>${cult ? 'Esferas e cidades' : 'Regiões e cidades'}</h4><div class="reg ${!E.regiao ? 'sel' : ''}"><button data-reg=""><span></span><span class="nome">${cult ? 'Todas as esferas' : 'Todas as regiões'}</span><span class="nums"><b>${itens.length}</b></span></button></div>`;
+  regs.forEach(r => {
+    const R = porReg[r]; const ab = E.abertas.has(r);
+    const cids = Object.entries(R.cidades).sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0]));
+    const cons = Object.entries(R.cons).sort((a, b) => b[1].n - a[1].n);
+    const htmlCons = cons.length ? `<div class="sub-t">Consórcios de saúde</div>` + cons.map(([o, v]) => `<div class="cid cons ${E.orgao === o ? 'sel' : ''}" data-reg="${esc(r)}" data-org="${esc(o)}" title="${esc(o)}"><span>◆ ${esc(nomeConsorcio(o))}</span><span class="nums">${v.nv ? `<span class="selo novo">+${v.nv}</span>` : ''}${v.n}</span></div>`).join('') + `<div class="sub-t">Municípios</div>` : '';
+    h += `<div class="reg ${ab ? 'aberta' : ''} ${E.regiao === r && !E.cidade && !E.orgao ? 'sel' : ''}"><button data-reg="${esc(r)}"><span class="seta">▶</span><span><span class="nome">${esc(nomeReg(r))}</span>${R.uf ? `<span class="uf">${R.uf}</span>` : ''}</span><span class="nums">${R.nv ? `<span class="selo novo">+${R.nv}</span>` : ''}<b>${R.n}</b></span><span class="barra"><i style="width:${(R.n / max * 100).toFixed(1)}%"></i></span></button>
+      <div class="cids">${htmlCons}${cids.map(([c, v]) => `<div class="cid ${v.n ? '' : 'zero'} ${E.cidade === c && E.regiao === r ? 'sel' : ''}" data-reg="${esc(r)}" data-cid="${esc(c)}"><span>${esc(c)}</span><span class="nums">${v.nv ? `<span class="selo novo">+${v.nv}</span>` : ''}${v.n}</span></div>`).join('')}</div></div>`;
+  });
+  return `<aside class="arvore">${h}</aside>`;
+}
+function renderLista() {
+  const p = pagAtual(); const l = filtrados();
+  const opts = p.cat === 'principal' ? [['', 'Todas as relevâncias'], ['alta', 'Relevância alta'], ['verificar', 'Verificar (saúde geral)'], ['consorcio', 'Consórcios']]
+    : [['', 'Todas as categorias'], ...Object.entries(SUB).filter(([k]) => k.startsWith({ cultura: 'cult_', consultoria: 'cons_', agro: 'agro_', construcao: 'obra_', mei: 'mei_', extra: '' }[p.cat] || '') && (p.cat !== 'extra' || !/^(cult|cons|obra|agro|mei)_/.test(k)))];
+  const per = [['novos', 'Novos'], ['7', '7 dias'], ['30', '30 dias'], ['todos', 'Todos']];
+  let h = `<div class="filtros">
+    <input type="search" id="fBusca" placeholder="Buscar por objeto, órgão, cidade ou nº do processo" value="${esc(E.busca)}">
+    <select id="fTipo">${opts.map(([v, t]) => `<option value="${v}" ${E.tipo === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <select id="fOrdem" title="Ordenar"><option value="pub" ${E.ordem === 'pub' ? 'selected' : ''}>Mais recentes primeiro</option><option value="prazo" ${E.ordem === 'prazo' ? 'selected' : ''}>Prazo mais próximo</option><option value="cidade" ${E.ordem === 'cidade' ? 'selected' : ''}>Cidade (A–Z)</option></select>
+  </div>
+  <div class="filtros"><span style="font-size:12.5px;color:var(--ink-3)">Publicação:</span><div class="periodo">${per.map(([v, t]) => `<button data-per="${v}" class="${E.periodo === v ? 'on' : ''}">${t}</button>`).join('')}</div>
+    <label><input type="checkbox" id="fEnc" ${E.encerrados ? 'checked' : ''}> Incluir encerrados</label></div>`;
+  h += `<div class="linha-info"><span>${l.length} processo(s)${E.ordem === 'pub' ? ' · do mais novo ao mais antigo (data de publicação)' : ''}</span>${E.regiao || E.cidade || E.orgao ? `<span class="chip-sel">${esc(E.orgao ? nomeConsorcio(E.orgao) : E.cidade || nomeReg(E.regiao))}<button id="limparSel" title="Limpar">×</button></span>` : ''}</div>`;
+  if (!l.length) return `<div>${h}<div class="vazio">Nenhum processo com esses filtros.</div></div>`;
+  let grupo = null;
+  l.slice(0, E.limite).forEach(i => {
+    if (E.ordem === 'pub') {
+      const g = ehNovo(i) ? 'n' : pub(i) >= LIM_REC ? 'r' : 'a';
+      if (g !== grupo) { grupo = g; h += { n: '<div class="divisor" style="color:var(--novo)">Novos — publicados hoje ou ontem</div>', r: '<div class="divisor ouro">Recentes — publicados nos últimos 30 dias</div>', a: '<div class="divisor">Publicados há mais de 30 dias (ainda abertos)</div>' }[g]; }
+    }
+    h += card(i);
+  });
+  if (l.length > E.limite) h += `<button class="btn mais" id="mais">Mostrar mais (${l.length - E.limite} restantes)</button>`;
+  return `<div>${h}</div>`;
+}
+
+function stEdital(f) {
+  if (!f) return '';
+  if (f.status === 'analisado') return `<span class="st ok">✓ Analisado${f.recomendacao ? ' · ' + esc(f.recomendacao) : ''}</span>`;
+  return '<span class="st ok">✓ Baixado</span>';
+}
+function card(i, rotCat) {
+  const d = diasAte(i.encerramento);
+  const prazo = i.encerramento ? `<span class="prazo ${d !== null && d >= 0 && d <= 7 ? 'crit' : ''}">${fData(i.encerramento)}${fHora(i.encerramento)}${d !== null && d >= 0 ? ` · ${d === 0 ? 'encerra hoje' : 'faltam ' + d + (d === 1 ? ' dia' : ' dias')}` : ''}</span>` : '—';
+  const tag = i.cat === 'principal' ? `<span class="selo ${REL[i.relev]?.[1] || 'verif'}">${REL[i.relev]?.[0] || ''}</span>` : `<span class="selo cat">${SUB[i.sub] || ''}</span>`;
+  const f = fila[i.id]; const m = marc[i.id];
+  const fora = /^(MAPA|WEB|DOU|AMM|FGM|AGM)-/.test(i.id);
+  const ac = [];
+  if (fora) ac.push(`<a class="btn prim" href="${esc(i.linkPNCP)}" target="_blank" rel="noopener">Abrir edital</a>`);
+  else if (f) { ac.push(`<button class="btn" data-abrir="${esc(i.id)}">Abrir pasta</button>`); if (f.status === 'analisado' && f.relatorio) ac.push(`<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(i.id)}" target="_blank">Ver análise</a>`); ac.push(stEdital(f)); }
+  else ac.push(`<button class="btn prim" data-baixar="${esc(i.id)}">Baixar edital</button>`);
+  if (!fora) ac.push(`<a class="btn" href="${esc(i.linkPNCP)}" target="_blank" rel="noopener">PNCP</a>`);
+  if (i.linkOrigem) ac.push(`<a class="btn" href="${esc(i.linkOrigem)}" target="_blank" rel="noopener">Sistema de origem</a>`);
+  if (temServidor) ac.push(`<select class="acomp ${m && m.etapa ? 'on' : ''}" data-marcar="${esc(i.id)}">${ETAPAS.map(([k, n]) => `<option value="${k}" ${(m && m.etapa || '') === k ? 'selected' : ''}>${n}</option>`).join('')}</select>`);
+  const cls = ehNovo(i) ? 'novo' : ehRec(i) ? 'rec' : '';
+  return `<article class="card ${cls} ${ativo(i) ? '' : 'inativo'}" id="c-${esc(i.id)}">
+    <div class="l1">${ehNovo(i) ? '<span class="selo novo">Novo</span>' : ehRec(i) ? '<span class="selo rec">Recente</span>' : ''}${rotCat ? `<span class="selo cat">${rotCat}</span>` : ''}${tag}${i.mei === 'sim' && i.meiTipo ? `<span class="selo cat" title="${esc(SUB[i.meiTipo] || '')}">MEI · ${esc(SUB[i.meiTipo] || '')}</span>` : ''}${ativo(i) ? '' : '<span class="selo enc">Encerrado</span>'}
+      <span class="local">${esc(i.cidade || nomeReg(i.regiao))}${i.uf && i.cidade && i.cidade !== 'Brasil' ? ' – ' + esc(i.uf) : ''}</span><span class="org">${esc(i.orgao)}</span>
+      <span class="pub">Publicado em <b>${fData(pub(i))}</b>${pub(i) ? ' · ' + haQuanto(pub(i)) : ''}</span></div>
+    <div class="obj">${esc(i.objeto)}</div>
+    <div class="meta"><span><b>Modalidade:</b> ${esc(i.modalidade)}</span>${i.processo ? `<span><b>Processo:</b> ${esc(i.processo)}</span>` : ''}<span><b>Encerramento:</b> ${prazo}</span>${i.valor && +i.valor > 0 ? `<span><b>Valor estimado:</b> ${(+i.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>` : ''}${i.fonte && i.fonte !== 'PNCP' ? `<span><b>Fonte:</b> ${esc(i.fonte)}</span>` : ''}</div>
+    <div class="acoes" data-acoes="${esc(i.id)}">${ac.join('')}</div></article>`;
+}
+
+/* ---------- acompanhamento e editais ---------- */
+function renderAcomp() {
+  const porId = Object.fromEntries(D.itens.map(i => [i.id, i]));
+  const cols = ETAPAS.slice(1).map(([k, n]) => {
+    const its = Object.entries(marc).filter(([id, m]) => m && m.etapa === k).map(([id, m]) => ({ i: porId[id], m, id }));
+    return `<div class="col"><h4>${n}<span>${its.length}</span></h4>${its.map(({ i, m, id }) => i ? `<div class="kc"><b>${esc(i.cidade || nomeReg(i.regiao))}${i.uf ? ' – ' + i.uf : ''}</b><div class="o">${esc(i.objeto)}</div><div class="r"><span>${i.encerramento ? 'Encerra ' + fData(i.encerramento) : ''}</span><select class="acomp on" data-marcar="${esc(id)}">${ETAPAS.map(([kk, nn]) => `<option value="${kk}" ${kk === k ? 'selected' : ''}>${kk ? nn : 'Remover'}</option>`).join('')}</select></div></div>` : '').join('') || '<div style="color:var(--ink-3);font-size:12.5px">Nenhum processo.</div>'}</div>`;
+  }).join('');
+  return (temServidor ? '' : '<div class="aviso">Abra pelo atalho para usar o acompanhamento.</div>') + `<div class="kanban">${cols}</div><p style="color:var(--ink-3);font-size:12.5px;margin-top:14px">Use o seletor <b>Acompanhar…</b> em qualquer processo para trazê-lo para cá. As marcações ficam salvas neste computador.</p>`;
+}
+function renderEditais() {
+  const v = Object.values(fila).sort((a, b) => String(b.baixadoEm).localeCompare(String(a.baixadoEm)));
+  if (!v.length) return '<div class="vazio">Nenhum edital baixado ainda. Use <b>Baixar edital</b> em um processo.</div>';
+  return `<table class="ed"><thead><tr><th>Cidade / órgão</th><th>Objeto</th><th>Encerramento</th><th>Baixado em</th><th>Situação</th><th></th></tr></thead><tbody>${v.map(f => `<tr><td><b>${esc(f.cidade)} – ${esc(f.uf)}</b><br><span style="color:var(--ink-3)">${esc(f.orgao)}</span></td><td>${esc(f.objeto)}<br><span style="color:var(--ink-3);font-size:12px">${(f.arquivos || []).length} arquivo(s)</span></td><td>${fData(f.encerramento)}</td><td>${fData(f.baixadoEm)}</td><td>${stEdital(f)}</td><td style="white-space:nowrap">${f.status === 'analisado' && f.relatorio ? `<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(f.id)}" target="_blank">Ver análise</a> ` : ''}<button class="btn" data-abrir="${esc(f.id)}">Pasta</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function render() {
+  try { localStorage.setItem('bgcRadar', JSON.stringify({ pag: E.pag, ordem: E.ordem })); } catch (e) {}
+  renderNav(); renderTopo(); renderKpis();
+  const foco = document.activeElement && document.activeElement.id;
+  const p = pagAtual();
+  $('#corpo').innerHTML = p.id === 'geral' ? renderGeral() : p.id === 'acomp' ? renderAcomp() : p.id === 'editais' ? renderEditais() : `<div class="layout">${renderArvore()}${renderLista()}</div>`;
+  if (foco === 'fBusca') { const el = $('#fBusca'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+}
+function irPara(pag) { E.pag = pag; E.regiao = null; E.cidade = null; E.orgao = null; E.tipo = ''; E.busca = ''; E.periodo = 'todos'; E.limite = 50; window.scrollTo(0, 0); render(); }
+
+function exportar() {
+  const l = filtrados();
+  const col = ['Destaque', 'Publicado', 'Categoria', 'Região/Esfera', 'Cidade', 'UF', 'Órgão', 'Modalidade', 'Processo', 'Objeto', 'Encerramento', 'Link', 'Sistema de origem', 'Acompanhamento'];
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const linhas = l.map(i => [ehNovo(i) ? 'NOVO' : ehRec(i) ? 'RECENTE' : '', fData(pub(i)), i.cat === 'principal' ? (REL[i.relev]?.[0] || '') : (SUB[i.sub] || ''), nomeReg(i.regiao), i.cidade, i.uf, i.orgao, i.modalidade, i.processo, i.objeto, fData(i.encerramento) + fHora(i.encerramento), i.linkPNCP, i.linkOrigem, (ETAPAS.find(e => e[0] === (marc[i.id]?.etapa || '')) || ['', ''])[1].replace('Acompanhar…', '')].map(q).join(';'));
+  const blob = new Blob(['﻿' + [col.map(q).join(';'), ...linhas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `BGC_${pagAtual().nome.replace(/\s+/g, '_')}_${HOJE}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button, .cid, tr[data-ir], .mini'); if (!t) return;
+  if (t.dataset.pag) return irPara(t.dataset.pag);
+  if (t.dataset.ir) return irPara(t.dataset.ir);
+  if (t.dataset.foco) { const i = D.itens.find(x => x.id === t.dataset.foco); if (i) { irPara(i.cat); E.busca = i.processo || i.objeto.slice(0, 40); render(); } return; }
+  if (t.id === 'mais') { E.limite += 50; return render(); }
+  if (t.id === 'limparSel') { E.regiao = null; E.cidade = null; E.orgao = null; return render(); }
+  if (t.id === 'btRecarregar') return location.reload();
+  if (t.id === 'btExportar') return exportar();
+  if (t.dataset.per) { E.periodo = t.dataset.per; E.limite = 50; return render(); }
+  if (t.id === 'btAtualizar') {
+    t.disabled = true; t.textContent = 'Buscando…';
+    try { const r = await fetch(API + '/api/atualizar', { method: 'POST' }).then(r => r.json()); alert(r.msg || r.erro); } catch (err) { alert('O servidor do painel não respondeu.'); }
+    t.textContent = 'Buscar agora'; t.disabled = false; return;
+  }
+  if (t.classList.contains('cid')) { E.regiao = t.dataset.reg; E.cidade = t.dataset.cid || null; E.orgao = t.dataset.org || null; E.limite = 50; return render(); }
+  if (t.dataset.reg !== undefined && t.closest('.reg')) {
+    const r = t.dataset.reg;
+    E.orgao = null;
+    if (!r) { E.regiao = null; E.cidade = null; return render(); }
+    if (E.regiao === r && !E.cidade && E.abertas.has(r)) E.abertas.delete(r); else E.abertas.add(r);
+    E.regiao = r; E.cidade = null; E.limite = 50; return render();
+  }
+  if (t.dataset.baixar) {
+    const id = t.dataset.baixar;
+    if (!temServidor) { const i = D.itens.find(x => x.id === id); window.open(i.linkPNCP, '_blank'); return; }
+    t.disabled = true; t.textContent = 'Baixando edital…';
+    try {
+      const r = await fetch(API + '/api/baixar?id=' + encodeURIComponent(id), { method: 'POST' }); const j = await r.json();
+      if (!r.ok) throw new Error(j.erro || 'Falha ao baixar');
+      fila[id] = j; render();
+    } catch (err) {
+      t.disabled = false; t.textContent = 'Baixar edital';
+      document.querySelector(`[data-acoes="${CSS.escape(id)}"]`).insertAdjacentHTML('beforeend', `<span class="st erro">${esc(err.message)}</span>`);
+    }
+    return;
+  }
+  if (t.dataset.abrir) { fetch(API + '/api/abrir?id=' + encodeURIComponent(t.dataset.abrir), { method: 'POST' }); return; }
+});
+document.addEventListener('input', e => { if (e.target.id === 'fBusca') { E.busca = e.target.value; E.limite = 50; render(); } });
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.marcar) {
+    const id = t.dataset.marcar, etapa = t.value;
+    try { const r = await fetch(`${API}/api/marcar?id=${encodeURIComponent(id)}&etapa=${encodeURIComponent(etapa)}`, { method: 'POST' }).then(r => r.json()); marc = r.marcacoes || marc; } catch (err) { alert('Não foi possível salvar o acompanhamento.'); }
+    return render();
+  }
+  if (t.id === 'fTipo') E.tipo = t.value; else if (t.id === 'fOrdem') E.ordem = t.value; else if (t.id === 'fEnc') E.encerrados = t.checked; else return;
+  E.limite = 50; render();
+});
+
+// dica do gráfico
+document.addEventListener('mousemove', e => {
+  const tip = $('#tip'); const h = e.target.closest && e.target.closest('rect.hit');
+  if (!h) { tip.style.display = 'none'; return; }
+  const v = +h.dataset.v; tip.innerHTML = `<b>${fData(h.dataset.d)}</b> · ${v} edital${v === 1 ? '' : 'is'} publicado${v === 1 ? '' : 's'}`;
+  tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + window.scrollY + 'px'; tip.style.position = 'absolute'; tip.style.display = 'block';
+});
+
+async function carregar() {
+  if (!temServidor) return;
+  try { const v = await fetch(API + '/api/fila').then(r => r.json()); fila = Object.fromEntries((v || []).map(f => [f.id, f])); } catch (e) {}
+  try { marc = await fetch(API + '/api/marcacoes').then(r => r.json()) || {}; } catch (e) {}
+}
+render();
+carregar().then(render);
+verificarServidor(); setInterval(verificarServidor, 5000);
+setInterval(() => temServidor && carregar().then(() => { if (!document.activeElement || !['fBusca'].includes(document.activeElement.id)) render(); }), 60000);
+</script>
+</body>
+</html>
