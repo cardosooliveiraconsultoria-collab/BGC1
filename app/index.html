@@ -1638,6 +1638,7 @@ function lib(n){ return _libs[n] ||= new Promise((res, rej) => { const s=documen
 // ---------- Word timbrado (Padrão Ressonar: faixa azul #1F3864, Arial, texto branco) ----------
 const BGC_EMP = {raz:'BGC CONSULTORIA — Cardoso Oliveira Consultoria', cnpj:'', end:'Rua Leonora Miranda, 675 – Bairro Isaías Pereira – Janaúba/MG – CEP 39447-586', tel:'', ema:'cardosooliveiraconsultoria@gmail.com'};
 const cnpjDe = e => e.cnpj || e.cnp || '';
+const endCompleto = e => { const c = String(e.cid||'').trim(); const cid1 = c.split('/')[0].trim(); return [String(e.end||'').trim(), c && !norm(e.end).includes(norm(cid1)) ? c : ''].filter(Boolean).join(' – '); };
 function faltaDadosEmp(e){
   const f = []; if(!(e.raz||'').trim()) f.push('razão social'); if(!cnpjDe(e)) f.push('CNPJ'); if(!(e.end||'').trim()) f.push('endereço completo'); if(!(e.tel||'').trim()) f.push('telefone'); if(!(e.ema||'').trim()) f.push('e-mail');
   return f;
@@ -1646,7 +1647,7 @@ function timbrado(e){
   return `<table style="width:100%;border-collapse:collapse;margin:0 0 18px"><tr><td style="background:#1F3864;color:#FFFFFF;text-align:center;padding:14px 18px;font-family:Arial">
    <div style="font-size:14pt;font-weight:bold;color:#FFFFFF">${esc(e.raz||e.fan)}</div>
    ${cnpjDe(e)?`<div style="font-size:9pt;color:#FFFFFF">CNPJ: ${esc(cnpjDe(e))}${e.im?' · Inscrição Municipal: '+esc(e.im):''}</div>`:''}
-   <div style="font-size:9pt;color:#FFFFFF">${esc(e.end||e.cid||'')}</div>
+   <div style="font-size:9pt;color:#FFFFFF">${esc(endCompleto(e))}</div>
    <div style="font-size:9pt;color:#FFFFFF">${[e.tel?'Tel: '+esc(e.tel):'', e.ema?'E-mail: '+esc(e.ema):''].filter(Boolean).join(' · ')}</div></td></tr></table>`;
 }
 const CSS_WORD = `body{font-family:Arial;font-size:11pt;line-height:1.5;color:#1a1a1a}h1{color:#1F3864;font-size:13pt;text-align:center;margin:10px 0 16px}h2{color:#1F3864;font-size:11pt;border-bottom:2px solid #1F3864;padding-bottom:3px;margin-top:18px}
@@ -1675,7 +1676,7 @@ const MODELOS = [
  {id:'livre', nome:'Documento livre timbrado', desc:'Ofícios, comunicados e qualquer texto com o timbrado da empresa.', campos:[{k:'titulo',l:'Título do documento'},{k:'texto',l:'Texto',t:'textarea'}]},
 ];
 function corpoModelo(id, e, v, s){
-  const R = `<strong>${esc(e.raz||e.fan)}</strong>, inscrita no CNPJ sob o nº ${esc(cnpjDe(e))}, com sede em ${esc(e.end)}`;
+  const R = `<strong>${esc(e.raz||e.fan)}</strong>, inscrita no CNPJ sob o nº ${esc(cnpjDe(e))}, com sede em ${esc(endCompleto(e))}`;
   const P = t => `<p>${t}</p>`;
   switch(id){
     case 'credenciamento': return `<h1>CARTA DE SOLICITAÇÃO DE CREDENCIAMENTO</h1><p style="text-align:left">Ao(À)<br><strong>${esc(v.orgao)}</strong><br>Ref.: ${esc(v.edital)}</p>`
