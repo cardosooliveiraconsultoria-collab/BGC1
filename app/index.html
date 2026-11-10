@@ -1914,9 +1914,9 @@ VIEWS.relatorios = () => {
 A.relWord = () => {
   const tipo = fget('relatorios','tipo','sintetico'); const D = dadosRel();
   const pv = $('#rel-prop'); if(pv) (UI.f.relatorios ||= {}).prop = pv.value;
-  const cab = D.e ? (faltaDadosEmp(D.e).length ? Object.assign({}, D.e, {raz:D.e.raz||D.e.fan}) : D.e) : BGC_EMP;
+  const cab = D.e ? (faltaDadosEmp(D.e).length ? Object.assign({}, D.e, {raz:D.e.raz||D.e.fan}) : D.e) : window.__bgc;
   const nomeT = {sintetico:'Sintético', analitico:'Analítico', evolucao:'Evolução do Cliente', equipe:'Atividades da Equipe'}[tipo];
-  baixarDoc(timbrado(cab) + htmlRel(D, tipo, true) + `<p style="text-align:right;margin-top:30px">Janaúba, ${dataExtenso()}.</p><div style="text-align:center;margin-top:40px"><div>_________________________________________</div><div style="font-weight:bold;margin-top:6px">Bruno Gabriel Cardoso da Silva</div><div style="font-size:10pt">Consultor Comercial — BGC Consultoria</div></div>`,
+  baixarDoc(timbrado(cab) + htmlRel(D, tipo, true) + `<p style="text-align:right;margin-top:30px">Janaúba, ${dataExtenso()}.</p><div style="text-align:center;margin-top:40px"><div>_________________________________________</div><div style="font-weight:bold;margin-top:6px">${esc(window.__bgc.assin||'Bruno Gabriel Cardoso da Silva')}</div><div style="font-size:10pt">${esc(window.__bgc.cargo||'Consultor Comercial — BGC Consultoria')}</div></div>`,
     `Relatório ${nomeT} - ${D.e?(D.e.fan||D.e.raz):'Grupo Ressonar'} - ${tipo==='evolucao'?D.P.ano:D.P.rot}`);
   registrar('gerou', 'relatorios', '', `Relatório ${nomeT} · ${D.e?(D.e.fan||D.e.raz):'todas as empresas'} · ${tipo==='evolucao'?D.P.ano:D.P.rot}`);
 };
@@ -2049,5 +2049,219 @@ const _viewDocs = VIEWS.docs;
 VIEWS.docs = () => _viewDocs().replace(/(<button class="btn sm" onclick="A\.emitir\('([\w-]+)'\)">)/g, `<button class="btn sm" onclick="A.pacote('$2')">${ic('zip',14)} Pacote ZIP</button>$1`);
 
 A.excl = (c,id) => excluir(c,id);
+// ════════════════════════════════════════════════════════════
+// DASHBOARDS (Executivo · Financeiro · Comercial · Institucional) e CONFIGURAÇÕES
+// ════════════════════════════════════════════════════════════
+ICON.gear = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>';
+NAV[0].it.splice(2, 0, ['dashboards','Dashboards','chart']);
+NAV.find(g => g.gestao).it.push(['config','Configurações','gear']);
+Object.assign(TITULOS, {dashboards:'Dashboards', config:'Configurações'});
+Object.assign(DESCR, {dashboards:'Executivo, Financeiro, Comercial e Institucional', config:'Drive, identidade visual, dados da BGC e tipos de documento'});
+
+// ---------- auxiliares ----------
+const fatProcMes = (pid, k) => Number(((BY.fat[pid]||{}).valores||{})[k])||0;
+const procsValidos = () => ativos('proc');
+const fatAnoMeses = ano => Array.from({length:12}, (_,i) => procsValidos().reduce((s,p) => s + fatProcMes(p.id, `${ano}-${pad(i+1)}`), 0));
+function barras(lista, fmt = v => v.toLocaleString('pt-BR'), cor = 'var(--navy3)'){
+  const L = lista.filter(x => x.v > 0); if(!L.length) return vazio('Sem dados no período');
+  const mx = Math.max(...L.map(x=>x.v));
+  return L.map(x => `<div style="display:grid;grid-template-columns:minmax(110px,38%) 1fr auto;gap:10px;align-items:center;margin-bottom:9px;${x.go?'cursor:pointer':''}" ${x.go?`onclick="${x.go}"`:''}><span class="small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.l)}">${esc(x.l)}</span><div class="bar"><i style="width:${x.v*100/mx}%;background:${x.c||cor}"></i></div><b class="small" style="text-align:right;white-space:nowrap">${fmt(x.v)}</b></div>`).join('');
+}
+function colunas(vals, rot, fmt, comp){
+  const mx = Math.max(1, ...vals, ...(comp||[]));
+  return `<div style="display:flex;align-items:flex-end;gap:6px;height:160px;padding-top:18px">${vals.map((v,i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px" title="${rot[i]}: ${fmt(v)}${comp?' · ano anterior '+fmt(comp[i]):''}"><span style="font-size:9.5px;color:var(--muted);white-space:nowrap">${v?fmt(v).replace(/R\$\s?/,'').replace(/,00$/,''):''}</span><div style="width:100%;display:flex;gap:2px;align-items:flex-end;flex:1">${comp?`<div style="flex:1;background:#C9D6EC;border-radius:3px 3px 0 0;height:${comp[i]/mx*100}%"></div>`:''}<div style="flex:1;background:var(--navy);border-radius:3px 3px 0 0;height:${Math.max(v?2:0, v/mx*100)}%"></div></div></div>`).join('')}</div>
+   <div style="display:flex;gap:6px;margin-top:6px">${rot.map(r => `<div style="flex:1;text-align:center;font-size:11px;color:var(--faint)">${r}</div>`).join('')}</div>`;
+}
+const cardD = (titulo, corpo, extra='') => `<div class="card"><div class="hd"><h3>${titulo}</h3><div class="sp"></div>${extra}</div><div class="bd">${corpo}</div></div>`;
+const kpiD = (l, v, s, c, go) => `<div class="kpi ${c||''}${go?' click':''}" ${go?`onclick="${go}"`:''}><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+const contatosMuni = id => ativos('contatos').filter(c => c.municipio===id);
+
+VIEWS.dashboards = () => {
+  const v='dashboards', aba=fget(v,'aba','exec');
+  const anos = [...new Set([new Date().getFullYear(), ...ativos('fat').flatMap(f=>Object.keys(f.valores||{}).map(k=>+k.slice(0,4)))])].sort((a,b)=>b-a);
+  const ano = +fget(v,'ano', new Date().getFullYear());
+  const top = `<div class="toolbar">${chipsF(v,'aba',[['exec','Executivo'],['fin','Financeiro'],['com','Comercial'],['inst','Institucional']],aba)}<div class="sp"></div><select class="sel" onchange="A.f('${v}','ano',this.value)">${opts(anos, ano)}</select></div>`;
+  return top + ({exec:dashExec, fin:dashFin, com:dashCom, inst:dashInst}[aba] || dashExec)(ano);
+};
+
+function dashExec(ano){
+  const P = procsValidos(); const ativosC = P.filter(p=>p.fase==='Contrato Ativo');
+  const D = ativos('docs'); const venc = D.filter(d=>statusDoc(d).k==='venc'), logo = D.filter(d=>statusDoc(d).k==='logo');
+  const meses = fatAnoMeses(ano); const totAno = meses.reduce((a,b)=>a+b,0);
+  const funil = FASES.map(f => ({l:f, v:P.filter(p=>p.fase===f).length, go:`A.f('proc','fase','${f}');A.ir('proc')`}));
+  const alertas = D.filter(d => !d.naovence && d.vencimento && diasAte(d.vencimento) <= 60).sort((a,b)=>a.vencimento.localeCompare(b.vencimento)).slice(0,8);
+  const ult = ativos('contatos').sort((a,b)=>((b.data||'')+(b.hora||'')).localeCompare((a.data||'')+(a.hora||''))).slice(0,6);
+  const porMuniC = {}; ativosC.forEach(p => { if(p.municipio) porMuniC[p.municipio]=(porMuniC[p.municipio]||0)+1; });
+  const porMuniV = {}; P.forEach(p => { const t = fatProcAno(p.id, String(ano)); if(t && p.municipio) porMuniV[p.municipio]=(porMuniV[p.municipio]||0)+t; });
+  const NOMEK = {venc:'Vencidos', logo:'Vencem em 15 dias', ok:'Em dia', sd:'Sem data', nv:'Não vencem'};
+  const st = {}; D.forEach(d => { const k = NOMEK[statusDoc(d).k]; st[k] = (st[k]||0)+1; });
+  const mesAt = hoje().slice(0,7); const cMes = {}; ativos('contatos').filter(c=>(c.data||'').startsWith(mesAt)).forEach(c => cMes[c.canal||'Outro']=(cMes[c.canal||'Outro']||0)+1);
+  return `<div class="kpis">
+    ${kpiD('Processos', P.filter(p=>p.fase!=='Arquivado').length, 'não arquivados','', "A.ir('proc')")}
+    ${kpiD('Contratos ativos', ativosC.length, '', 'green', "A.f('proc','fase','Contrato Ativo');A.ir('proc')")}
+    ${kpiD('Municípios', ativos('munis').length, `${Object.keys(porMuniC).length} com contrato ativo`)}
+    ${kpiD('Documentos críticos', venc.length + logo.length, `${venc.length} vencidos · ${logo.length} em 15 dias`, venc.length?'red':logo.length?'amber':'green', "A.docsNav('','');A.f('docs','modo','alertas');A.ir('docs')")}
+    ${kpiD('Faturamento '+ano, brl0(totAno), 'acumulado', '', "A.f('dashboards','aba','fin')")}
+  </div>
+  <div class="grid g2">
+    ${cardD('Funil de processos por fase', barras(funil))}
+    ${cardD('Documentos vencendo (60 dias)', alertas.length ? `<div class="list" style="margin:-16px -18px">${alertas.map(d => `<div class="it click" onclick="A.abrir('docs','${d.id}')"><div class="tx"><div class="b">${esc(d.tipo)}</div><div class="small muted">${esc(empNome(d.empresa))} · ${fmtD(d.vencimento)}</div></div>${tag(statusDoc(d).t, statusDoc(d).c)}</div>`).join('')}</div>` : vazio('Nenhum documento vencendo'))}
+    ${cardD('Faturamento por mês · '+ano, colunas(meses, MESES, brl0))}
+    ${cardD('Documentos por situação', barras(Object.entries(st).map(([l,n]) => ({l, v:n, c:{Vencidos:'var(--red)','Vencem em 15 dias':'var(--amber)','Em dia':'var(--green)'}[l]}))))}
+    ${cardD('Municípios com mais contratos ativos', barras(Object.entries(porMuniC).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([m,n]) => ({l:muniNome(m), v:n, go:`A.abrir('munis','${m}')`}))))}
+    ${cardD('Municípios por valor faturado · '+ano, barras(Object.entries(porMuniV).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([m,n]) => ({l:muniNome(m), v:n, go:`A.abrir('munis','${m}')`})), brl0))}
+    ${cardD('Últimas interações', ult.length ? `<div class="list" style="margin:-16px -18px">${ult.map(c => `<div class="it click" onclick="A.abrir('contatos','${c.id}')"><div class="ic">${ic(c.canal==='Ligação'?'phone':'msg',16)}</div><div class="tx"><div class="b">${esc(muniNome(c.municipio))} · ${esc(c.pessoa||c.funcao||'')}</div><div class="small muted clip">${esc(c.resumo||'')}</div></div><span class="tm">${fmtD(c.data)}</span></div>`).join('')}</div>` : vazio('Nenhum contato registrado'))}
+    ${cardD('Contatos do mês por canal', barras(Object.entries(cMes).map(([l,n]) => ({l, v:n}))))}
+  </div>`;
+}
+
+function dashFin(ano){
+  const P = procsValidos(); const ativosC = P.filter(p=>p.fase==='Contrato Ativo');
+  const m = fatAnoMeses(ano), mAnt = fatAnoMeses(ano-1);
+  const tot = m.reduce((a,b)=>a+b,0), totAnt = mAnt.reduce((a,b)=>a+b,0);
+  const mesesCom = m.filter(Boolean).length; const ultMes = m.reduce((u,v,i)=>v?i:u, -1);
+  const ateMesAnt = mAnt.slice(0, ultMes+1).reduce((a,b)=>a+b,0);
+  const cresc = ateMesAnt ? (tot/ateMesAnt - 1)*100 : 0;
+  const ticket = ativosC.length ? tot/ativosC.length : 0;
+  const porEmp = {}, porReg = {}, porTipo = {}, porContr = [];
+  P.forEach(p => { const t = fatProcAno(p.id, String(ano)); if(!t) return; porEmp[p.empresa]=(porEmp[p.empresa]||0)+t; const r = regiaoDe(p.municipio)||'Sem região'; porReg[r]=(porReg[r]||0)+t; porTipo[p.tipoContr||'Outro']=(porTipo[p.tipoContr||'Outro']||0)+t; porContr.push([p,t]); });
+  const parc = P.filter(p => p.tipoContr==='Parceria');
+  const melhor = m.indexOf(Math.max(...m));
+  return `<div class="kpis">
+    ${kpiD('Receita '+ano, brl0(tot), `${mesesCom} mês(es) com lançamento`)}
+    ${kpiD('Crescimento', ateMesAnt?`${cresc>=0?'+':''}${cresc.toFixed(1)}%`:'—', ateMesAnt?`vs ${ano-1} no mesmo período`:'sem base no ano anterior', cresc>=0?'green':'red')}
+    ${kpiD('Ticket médio', brl0(ticket), 'por contrato ativo')}
+    ${kpiD('Contratos ativos', ativosC.length)}
+    ${kpiD('Parcerias', parc.filter(p=>p.fase==='Contrato Ativo').length, `${parc.length} cadastrada(s)`)}
+  </div>
+  <div class="grid">${cardD(`Receita mensal ${ano} <span class="small muted" style="font-weight:400">· barra clara = ${ano-1}</span>`, colunas(m, MESES, brl0, mAnt))}</div>
+  <div class="grid g2" style="margin-top:16px">
+    ${cardD('Receita por empresa', barras(Object.entries(porEmp).sort((a,b)=>b[1]-a[1]).map(([e,v]) => ({l:empNome(e), v, go:`A.f('fat','emp','${e}');A.ir('fat')`})), brl0))}
+    ${cardD('Receita por região', barras(Object.entries(porReg).sort((a,b)=>b[1]-a[1]).map(([l,v]) => ({l, v})), brl0, 'var(--blue)'))}
+    ${cardD('Receita por tipo de contratante', barras(Object.entries(porTipo).sort((a,b)=>b[1]-a[1]).map(([l,v]) => ({l, v})), brl0, '#7C5CC4'))}
+    ${cardD('Maiores contratos no ano', barras(porContr.sort((a,b)=>b[1]-a[1]).slice(0,8).map(([p,v]) => ({l:`${empNome(p.empresa)} · ${contratante(p)}`, v, go:`A.abrir('proc','${p.id}')`})), brl0))}
+    ${cardD('Resumo anual', `<div class="kv" style="grid-template-columns:1fr auto;gap:10px 16px">
+      <span>Receita ${ano}</span><b>${brl(tot)}</b><span>Receita ${ano-1} (ano todo)</span><b>${brl(totAnt)}</b>
+      <span>Média mensal ${ano}</span><b>${brl(mesesCom?tot/mesesCom:0)}</b><span>Melhor mês</span><b>${m[melhor]?MESES[melhor]+' · '+brl(m[melhor]):'—'}</b>
+      <span>Contratos com faturamento</span><b>${porContr.length}</b><span>Contratos ativos sem faturamento no ano</span><b>${ativosC.filter(p=>!fatProcAno(p.id,String(ano))).length}</b></div>`)}
+  </div>`;
+}
+
+function dashCom(ano){
+  const C = ativos('contatos').filter(c => (c.data||'').startsWith(String(ano)));
+  const n = k => C.filter(c => c.canal===k).length;
+  const munAt = new Set(C.map(c=>c.municipio).filter(Boolean)).size;
+  const resolv = C.filter(c => c.resultado==='Resolvido').length;
+  const taxa = C.length ? resolv*100/C.length : 0;
+  const porMes = Array.from({length:12}, (_,i) => C.filter(c => +c.data.slice(5,7)===i+1).length);
+  const res = {}; C.forEach(c => res[c.resultado||'Sem resultado']=(res[c.resultado||'Sem resultado']||0)+1);
+  const reg = {}; C.forEach(c => { const r = regiaoDe(c.municipio)||'Sem região'; reg[r]=(reg[r]||0)+1; });
+  const H = hoje(); const fut = ativos('contatos').filter(c => c.proxdata && c.proxdata>=H).sort((a,b)=>a.proxdata.localeCompare(b.proxdata)).slice(0,8);
+  const atras = ativos('contatos').filter(c => c.proxdata && c.proxdata<H && c.resultado==='Retornar').length;
+  return `<div class="kpis">
+    ${kpiD('Ligações', n('Ligação'), String(ano))}${kpiD('WhatsApp', n('WhatsApp'), String(ano))}${kpiD('E-mails', n('E-mail'), String(ano))}${kpiD('Presenciais', n('Presencial'), 'visitas e reuniões')}
+    ${kpiD('Municípios atendidos', munAt)}${kpiD('Resolvidos', `${taxa.toFixed(0)}%`, `${resolv} de ${C.length} contatos`, 'green')}
+  </div>
+  <div class="grid">${cardD('Contatos por mês · '+ano, colunas(porMes, MESES, x => String(x)))}</div>
+  <div class="grid g2" style="margin-top:16px">
+    ${cardD('Contatos por canal', barras(CANAIS.map(k => ({l:k, v:n(k)}))))}
+    ${cardD('Contatos por região', barras(Object.entries(reg).sort((a,b)=>b[1]-a[1]).map(([l,v]) => ({l, v, go:`A.f('contatos','reg','${esc(l)}');A.f('contatos','per','todos');A.ir('contatos')`}))))}
+    ${cardD('Resultado dos contatos', barras(Object.entries(res).sort((a,b)=>b[1]-a[1]).map(([l,v]) => ({l, v, c:{Resolvido:'var(--green)',Retornar:'var(--amber)','Sem resposta':'var(--red)'}[l]}))))}
+    ${cardD('Próximos retornos', fut.length ? `<div class="list" style="margin:-16px -18px">${fut.map(c => `<div class="it click" onclick="A.abrir('contatos','${c.id}')"><div class="tx"><div class="b">${esc(muniNome(c.municipio))} · ${esc(c.pessoa||'')}</div><div class="small muted clip">${esc(c.pendencia||c.resumo||'')}</div></div><span class="tm">${fmtD(c.proxdata)}</span></div>`).join('')}</div>` : vazio('Nenhum retorno agendado'), atras?tag(atras+' atrasado(s)','red'):'')}
+  </div>`;
+}
+
+function dashInst(ano){
+  const C = ativos('contatos'); const f = k => C.filter(c => c.funcao===k).length;
+  const munis = ativos('munis');
+  const porMun = munis.map(m => ({m, cs:contatosMuni(m.id)})).filter(x => x.cs.length);
+  const tempos = porMun.filter(x => x.cs.length>1).map(x => { const d = x.cs.map(c=>c.data).filter(Boolean).sort(); let s=0; for(let i=1;i<d.length;i++) s += (new Date(d[i])-new Date(d[i-1]))/864e5; return s/(d.length-1); });
+  const tMed = tempos.length ? tempos.reduce((a,b)=>a+b,0)/tempos.length : 0;
+  const carteira = new Set(ativos('proc').filter(p=>p.fase==='Contrato Ativo').map(p=>p.municipio));
+  const esquecidos = munis.filter(m => carteira.has(m.id)).map(m => { const u = contatosMuni(m.id).map(c=>c.data).sort().pop(); return {m, u, d: u ? -diasAte(u) : 9999}; }).filter(x => x.d>=30).sort((a,b)=>b.d-a.d).slice(0,10);
+  const curva = {}; munis.forEach(m => curva['Curva '+(m.curva||'—')]=(curva['Curva '+(m.curva||'—')]||0)+1);
+  const semPref = munis.filter(m => !m.prefeito).length, semSec = munis.filter(m => !m.secretario).length, semAg = munis.filter(m => !m.agendadora).length;
+  return `<div class="kpis">
+    ${kpiD('Com prefeitos', f('Prefeito'), 'contatos')}${kpiD('Com secretários', f('Secretário de Saúde'), 'contatos')}${kpiD('Com agendadores', f('Agendador'), 'contatos')}
+    ${kpiD('Municípios com histórico', porMun.length, `de ${munis.length}`)}${kpiD('Tempo médio', `${tMed.toFixed(0)} dias`, 'entre contatos no mesmo município')}
+  </div>
+  <div class="grid g2">
+    ${cardD('Municípios mais ativos', barras(porMun.sort((a,b)=>b.cs.length-a.cs.length).slice(0,10).map(x => ({l:`${x.m.nome} – ${x.m.uf||''}`, v:x.cs.length, go:`A.abrir('munis','${x.m.id}')`}))))}
+    ${cardD('Contatos por interlocutor', barras(FUNCOES.map(k => ({l:k, v:f(k)}))))}
+    ${cardD('Carteira sem contato há 30 dias ou mais', esquecidos.length ? `<div class="list" style="margin:-16px -18px">${esquecidos.map(x => `<div class="it click" onclick="A.abrir('munis','${x.m.id}')"><div class="tx"><div class="b">${esc(x.m.nome)}</div><div class="small muted">${esc(x.m.regiao||'')}${x.u?' · último contato '+fmtD(x.u):' · nenhum contato registrado'}</div></div>${tag(x.d>=9999?'sem contato':x.d+' dias', x.d>=60?'red':'amber')}</div>`).join('')}</div>` : vazio('Toda a carteira foi contatada nos últimos 30 dias'))}
+    ${cardD('Cadastro dos municípios', `<div class="kv" style="grid-template-columns:1fr auto;gap:10px 16px"><span>Sem prefeito cadastrado</span><b>${semPref}</b><span>Sem secretário(a) de saúde</span><b>${semSec}</b><span>Sem agendador(a)</span><b>${semAg}</b></div><div style="margin-top:16px">${barras(Object.entries(curva).sort().map(([l,v]) => ({l, v})))}</div>`)}
+  </div>`;
+}
+
+// ════════════════ CONFIGURAÇÕES (gestão) ════════════════
+const tiposDocTodos = () => [...new Set([...TIPOS_DOC, ...((cfg().tiposDoc)||[])])];
+FORM.docs.find(f => f.k==='tipo').o = tiposDocTodos;
+FORM.anexos.find(f => f.k==='documento').o = tiposDocTodos;
+VIEWS.config = () => {
+  const c = cfg(); const v = c.visual || {}; const b = c.bgc || {};
+  return `<div class="grid g2">
+   <div class="card"><div class="hd"><h3>Google Drive</h3><div class="sp"></div>${driveOk()?tag('Conectado','green'):tag('Desconectado')}</div><div class="bd">
+     <div class="form"><div class="fld full"><label>Client ID (Google Cloud)</label><input class="in" id="cf-cid" value="${esc(c.clientId||'')}"></div>
+     <div class="fld"><label>Pasta raiz (Empresas)</label><input class="in" id="cf-fid" value="${esc(c.folderId||'')}"></div><div class="fld"><label>Pasta de backups</label><input class="in" id="cf-bid" value="${esc(c.backupFolderId||'')}"></div></div>
+     <div class="small faint" style="margin-top:10px">Primeiro acesso em outro endereço: no console.cloud.google.com → Credenciais, adicione o endereço do sistema em “Origens JavaScript autorizadas”.</div>
+     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" onclick="A.salvarCfg()">Salvar</button><button class="btn pri" onclick="A.driveConectar()">${driveOk()?'Reconectar':'Conectar'} Drive</button>${c.folderId?`<a class="btn" href="https://drive.google.com/drive/folders/${esc(c.folderId)}" target="_blank" rel="noopener">${ic('ext',15)} Abrir pasta</a>`:''}<button class="btn" onclick="A.criarPastas()">Criar pastas das empresas</button></div></div></div>
+   <div class="card"><div class="hd"><h3>Identidade visual</h3></div><div class="bd">
+     <div class="form"><div class="fld full"><label>Nome exibido no sistema</label><input class="in" id="cv-nome" value="${esc(v.nome||'BGC Consultoria')}"></div>
+     <div class="fld full"><label>Subtítulo</label><input class="in" id="cv-sub" value="${esc(v.sub||'Gestão comercial')}"></div>
+     <div class="fld full"><label>Logo</label><div style="display:flex;gap:12px;align-items:center">${v.logo?`<img src="${v.logo}" style="width:48px;height:48px;object-fit:contain;border-radius:8px;border:1px solid var(--line);background:#fff">`:'<div class="logo" style="background:var(--navy);color:#fff">BGC</div>'}<label class="btn sm">${ic('up',14)} Escolher imagem<input type="file" accept="image/*" class="hidden" onchange="A.logo(this)"></label>${v.logo?`<button class="btn sm ghost" onclick="A.salvarVisual(true)">Remover logo</button>`:''}</div><div class="hint">PNG ou JPG; a imagem é reduzida automaticamente.</div></div></div>
+     <div style="margin-top:14px"><button class="btn pri" onclick="A.salvarVisual()">Aplicar</button></div></div></div>
+   <div class="card"><div class="hd"><h3>Dados da BGC Consultoria</h3><div class="sp"></div><span class="small muted">timbrado dos relatórios gerais</span></div><div class="bd">
+     <div class="form">${[['raz','Nome / razão social',BGC_EMP.raz],['cnpj','CNPJ',''],['end','Endereço completo',BGC_EMP.end],['tel','Telefone',''],['ema','E-mail',BGC_EMP.ema],['assin','Assinatura dos relatórios','Bruno Gabriel Cardoso da Silva'],['cargo','Cargo na assinatura','Consultor Comercial — BGC Consultoria']].map(([k,l,d]) => `<div class="fld ${['raz','end','assin'].includes(k)?'full':''}"><label>${l}</label><input class="in" id="cb-${k}" value="${esc(b[k]??d)}"></div>`).join('')}</div>
+     <div style="margin-top:14px"><button class="btn pri" onclick="A.salvarBgc()">Salvar</button></div></div></div>
+   <div class="card"><div class="hd"><h3>Tipos de documento</h3><div class="sp"></div><span class="small muted">aparecem nas listas de Documentos e Anexos</span></div><div class="bd">
+     <div style="display:flex;gap:8px;margin-bottom:12px"><input class="in" id="ct-novo" style="flex:1" placeholder="Novo tipo, ex.: Certidão de Regularidade do CRM"><button class="btn pri" onclick="A.tipoDoc()">Adicionar</button></div>
+     <div class="chips">${TIPOS_DOC.map(t => `<span class="chip" style="cursor:default">${esc(t)}</span>`).join('')}${((c.tiposDoc)||[]).map((t,i) => `<span class="chip on" style="cursor:default">${esc(t)} <a href="#" style="color:#fff;margin-left:4px" onclick="event.preventDefault();A.tipoDoc(${i})">×</a></span>`).join('')}</div>
+     <div class="small faint" style="margin-top:10px">Os tipos padrão (cinza) são fixos; os que você adicionar (azul) podem ser removidos.</div></div></div>
+   <div class="card"><div class="hd"><h3>Outras configurações</h3></div><div class="bd np">
+     ${[['equipe','Equipe e perfis de acesso','users'],['equipe','Itens da rotina diária','check'],['dados','Backup, restauração e importação','db'],['lixeira','Lixeira (restaurar registros)','trash']].map(([id,n,i]) => `<div class="lnk-row" style="cursor:pointer" onclick="A.ir('${id}')"><div class="ic" style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)">${ic(i,16)}</div><div style="flex:1" class="b">${n}</div>${ic('ext',14)}</div>`).join('')}
+   </div></div>
+  </div>`;
+};
+A.salvarBgc = () => { const b = {}; ['raz','cnpj','end','tel','ema','assin','cargo'].forEach(k => b[k] = $('#cb-'+k).value.trim()); salvar('config', {id:'geral', bgc:b}, {titulo:'Dados da BGC Consultoria'}); toast('Dados salvos'); };
+A.tipoDoc = i => {
+  const l = [...((cfg().tiposDoc)||[])];
+  if(i===undefined){ const t = $('#ct-novo').value.trim(); if(!t) return; if(tiposDocTodos().some(x => norm(x)===norm(t))) return toast('Esse tipo já existe', true); l.push(t); }
+  else l.splice(i,1);
+  salvar('config', {id:'geral', tiposDoc:l}, {titulo:'Tipos de documento'});
+};
+A.logo = input => {
+  const f = input.files[0]; input.value=''; if(!f) return;
+  const img = new Image(); img.onload = () => { const s = Math.min(1, 256/Math.max(img.width, img.height)); const cv = document.createElement('canvas'); cv.width = Math.round(img.width*s); cv.height = Math.round(img.height*s); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); A._logo = cv.toDataURL('image/png'); A.salvarVisual(); };
+  img.onerror = () => toast('Imagem inválida', true); img.src = URL.createObjectURL(f);
+};
+A.salvarVisual = remover => {
+  const v = Object.assign({}, cfg().visual || {});
+  if($('#cv-nome')) v.nome = $('#cv-nome').value.trim() || 'BGC Consultoria';
+  if($('#cv-sub')) v.sub = $('#cv-sub').value.trim();
+  if(A._logo) v.logo = A._logo; if(remover === true) v.logo = '';
+  A._logo = null;
+  salvar('config', {id:'geral', visual:v}, {titulo:'Identidade visual'}); toast('Visual aplicado');
+};
+A.criarPastas = async () => {
+  try { if(!cfg().folderId) throw new Error('Informe a pasta raiz e salve');
+    toast('Criando pastas…'); const pE = await pasta('Empresas', cfg().folderId);
+    for(const e of empsOrd()) await pasta(empNome(e.id), pE);
+    toast('Pastas das empresas conferidas no Drive');
+  } catch(x){ toast(x.message, true); }
+};
+// identidade visual aplicada no menu e na tela de login (a logo fica guardada neste aparelho para a tela de login)
+const _renderSide = renderSide;
+renderSide = function(){
+  _renderSide();
+  const v = cfg().visual || {};
+  try { localStorage.setItem('bgc2_visual', JSON.stringify({nome:v.nome||'', sub:v.sub||'', logo:v.logo||''})); } catch {}
+  const br = $('#side .brand'); if(!br) return;
+  if(v.logo) br.querySelector('.logo').outerHTML = `<img src="${v.logo}" style="width:40px;height:40px;object-fit:contain;border-radius:9px;background:#fff">`;
+  if(v.nome) br.querySelector('b').textContent = v.nome;
+  if(v.sub !== undefined && v.sub !== '') br.querySelector('small').textContent = v.sub;
+};
+try { const v = JSON.parse(localStorage.getItem('bgc2_visual')||'{}'); if(v.logo) document.querySelectorAll('#login .logo').forEach(l => l.outerHTML = `<img src="${v.logo}" style="width:40px;height:40px;object-fit:contain;border-radius:9px;background:#fff">`); } catch {}
+// dados da BGC usados no timbrado e na assinatura dos relatórios gerais
+Object.defineProperty(window, '__bgc', {get: () => Object.assign({}, BGC_EMP, cfg().bgc || {})});
 </script>
 </body></html>
