@@ -352,6 +352,10 @@ const ttl = s => String(s||'').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpper
 function toast(msg, er){ const t=document.createElement('div'); t.className='toast'+(er?' er':''); t.textContent=msg; $('#toast').appendChild(t); setTimeout(()=>t.remove(), er?6000:2800); }
 
 const ICON = {
+ file:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 15l2 2 4-4"/>',
+ calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/>',
+ chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ zip:'<path d="M4 4h16v16H4z"/><path d="M12 4v3M12 9v2M12 13v2"/><rect x="10.5" y="15" width="3" height="3" rx=".5"/>',
  grid:'<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
  home:'<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
  diario:'<path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><path d="M8 9h8M8 13h6"/>',
@@ -414,6 +418,7 @@ async function backendFirebase(){
     listen: (col, cb, onErr) => fs.onSnapshot(C(PFX+col), {includeMetadataChanges:false}, s => cb(rows(s), s.metadata.fromCache), onErr),
     listenWhere: (col, f, op, v, cb, onErr) => fs.onSnapshot(fs.query(C(PFX+col), fs.where(f,op,v)), s => cb(rows(s)), onErr),
     getWhere: async (col, f, op, v) => rows(await fs.getDocs(fs.query(C(PFX+col), fs.where(f,op,v)))),
+    getRange: async (col, f, a, b) => rows(await fs.getDocs(fs.query(C(PFX+col), fs.where(f,'>=',a), fs.where(f,'<=',b)))),
     getAll: async col => rows(await fs.getDocs(C(PFX+col))),
     getAllRaw: async name => rows(await fs.getDocs(C(name))),
     getRaw: async (col, id) => { const s = await fs.getDoc(fs.doc(db, col, id)); return s.exists() ? s.data() : null; },
@@ -447,6 +452,7 @@ function backendMock(){
     listen: (col, cb) => { const l={col:PFX+col, run:()=>cb(list(PFX+col), false)}; L.push(l); setTimeout(l.run, 10); return () => L.splice(L.indexOf(l),1); },
     listenWhere: (col, f, op, v, cb) => { const l={col:PFX+col, run:()=>cb(list(PFX+col).filter(r=>match(r,f,op,v)))}; L.push(l); setTimeout(l.run, 10); return () => L.splice(L.indexOf(l),1); },
     getWhere: async (col,f,op,v) => list(PFX+col).filter(r=>match(r,f,op,v)),
+    getRange: async (col,f,a,b) => list(PFX+col).filter(r=>r[f]>=a && r[f]<=b),
     getAll: async col => list(PFX+col),
     getAllRaw: async name => list(name),
     getRaw: async (col,id) => (D[col]||{})[id] || null,
@@ -456,7 +462,7 @@ function backendMock(){
   };
 }
 // ════════════════ ESTADO ════════════════
-const COLS = ['usuarios','contatos','tarefas','docs','anexos','viagens','proc','fat','munis','emps','agenda','portais','rotina','config'];
+const COLS = ['usuarios','contatos','tarefas','docs','anexos','viagens','proc','fat','munis','emps','agenda','portais','rotina','config','orcamentos','precos','modelosGerados'];
 const S = {}; const BY = {}; COLS.forEach(c => { S[c]=[]; BY[c]={}; });
 S.logHoje=[]; S.checksHoje=[]; S.diarioHoje=[];
 let ME = null; let carregado = new Set(); let unsubs = [];
@@ -465,7 +471,7 @@ const ativos = col => S[col].filter(r => !r.excluido);
 const G = () => ME && ME.perfil === 'gestao';
 
 const muni = id => BY.munis[id];
-const muniNome = id => muni(id)?.nome || '';
+const muniNome = id => String(muni(id)?.nome || '').replace(/\\'/g,"'");
 const regiaoDe = id => muni(id)?.regiao || '';
 const emp = id => BY.emps[id];
 const empNome = id => emp(id)?.fan || emp(id)?.raz || '';
@@ -635,8 +641,8 @@ A.sair = async () => { if(pendentes && !await perguntar('Ainda há alterações 
 const NAV = [
   {g:'Visão geral', it:[['inicio','Início','grid'],['painel','Painel gerencial','home'],['diario','Diário da equipe','diario']]},
   {g:'Operação', it:[['contatos','Ligações e mensagens','phone'],['tarefas','Tarefas e pendências','task'],['agenda','Agenda','cal'],['viagens','Viagens','car']]},
-  {g:'Documentação', it:[['docs','Documentos e CNDs','doc'],['anexos','Conferência de anexos','clip']]},
-  {g:'Comercial', it:[['proc','Processos e contratos','brief'],['fat','Faturamento','money'],['munis','Municípios','map'],['emps','Empresas','build'],['portais','Portais de licitação','globe']]},
+  {g:'Documentação', it:[['docs','Documentos e CNDs','doc'],['anexos','Conferência de anexos','clip'],['modelos','Modelos de documentos','file']]},
+  {g:'Comercial', it:[['proc','Processos e contratos','brief'],['fat','Faturamento','money'],['orcamentos','Orçamentos e tabelas','calc'],['relatorios','Relatórios','chart'],['munis','Municípios','map'],['emps','Empresas','build'],['portais','Portais de licitação','globe']]},
   {g:'Administração', gestao:true, it:[['equipe','Equipe e rotina','users'],['lixeira','Lixeira','trash'],['dados','Backup e dados','db']]},
 ];
 const TITULOS = Object.fromEntries(NAV.flatMap(g => g.it.map(i => [i[0], i[1]])));
@@ -1319,7 +1325,7 @@ const FORM = {
   {k:'sobre',l:'Sobre o município',t:'textarea',full:1},{k:'obs',l:'Observações',t:'textarea',full:1}],
  emps:[
   {k:'fan',l:'Nome fantasia',t:'text',req:1},{k:'raz',l:'Razão social',t:'text',req:1},
-  {k:'cnpj',l:'CNPJ',t:'text'},{k:'uf',l:'UF',t:'select',o:['MG','BA']},
+  {k:'cnpj',l:'CNPJ',t:'text'},{k:'uf',l:'UF',t:'select',o:['MG','BA']},{k:'im',l:'Inscrição municipal',t:'text'},{k:'porte',l:'Porte',t:'select',o:['ME','EPP','Demais']},
   {k:'cid',l:'Cidade',t:'text'},{k:'tel',l:'Telefone',t:'text'},
   {k:'end',l:'Endereço',t:'text',full:1},{k:'ema',l:'E-mail',t:'text',full:1},
   {k:'rep',l:'Representante legal',t:'text'},{k:'cpf',l:'CPF do representante',t:'text'},
@@ -1615,5 +1621,432 @@ montarShell = function(){
     setTimeout(() => { if(!$('#boot').classList.contains('hidden')) $('#boot').innerHTML = '<div style="text-align:center">Ainda carregando… verifique a internet.<br><br><button class="btn" onclick="A.sair()">Sair</button></div>'; }, 15000);
   });
 })().catch(e => { console.error(e); $('#boot').innerHTML = `<div style="max-width:420px;text-align:center">Não foi possível iniciar o sistema: ${esc(e.message)}<br><br><button class="btn" onclick="location.reload()">Tentar de novo</button></div>`; });
+// ════════════════════════════════════════════════════════════
+// MÓDULOS TRAZIDOS DA VERSÃO ANTERIOR (refeitos):
+// Modelos de documentos · Pacote de documentos (ZIP) · Relatórios · Orçamentos e tabelas de preços
+// ════════════════════════════════════════════════════════════
+Object.assign(COLNOME, {orcamentos:'Orçamento', precos:'Tabela de preços', modelosGerados:'Documento gerado', modelos:'Documento gerado', relatorios:'Relatório', pacotes:'Pacote de documentos'});
+Object.assign(ICOL, {orcamentos:'calc', precos:'calc', modelosGerados:'file', modelos:'file', relatorios:'chart', pacotes:'zip'});
+Object.assign(ACAONOME, {gerou:'gerou'});
+Object.assign(DESCR, {modelos:'Declarações e cartas com o timbrado da empresa', orcamentos:'Orçamentos com tabela cheia ou de parceria', relatorios:'Relatórios sintético, analítico e evolução'});
+
+// ---------- carregamento sob demanda de bibliotecas ----------
+const LIBS = {jszip:'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'};
+const _libs = {};
+function lib(n){ return _libs[n] ||= new Promise((res, rej) => { const s=document.createElement('script'); s.src=LIBS[n]; s.onload=()=>res(); s.onerror=()=>{ delete _libs[n]; rej(new Error('Não foi possível carregar '+n)); }; document.head.appendChild(s); }); }
+
+// ---------- Word timbrado (Padrão Ressonar: faixa azul #1F3864, Arial, texto branco) ----------
+const BGC_EMP = {raz:'BGC CONSULTORIA — Cardoso Oliveira Consultoria', cnpj:'', end:'Rua Leonora Miranda, 675 – Bairro Isaías Pereira – Janaúba/MG – CEP 39447-586', tel:'', ema:'cardosooliveiraconsultoria@gmail.com'};
+const cnpjDe = e => e.cnpj || e.cnp || '';
+function faltaDadosEmp(e){
+  const f = []; if(!(e.raz||'').trim()) f.push('razão social'); if(!cnpjDe(e)) f.push('CNPJ'); if(!(e.end||'').trim()) f.push('endereço completo'); if(!(e.tel||'').trim()) f.push('telefone'); if(!(e.ema||'').trim()) f.push('e-mail');
+  return f;
+}
+function timbrado(e){
+  return `<table style="width:100%;border-collapse:collapse;margin:0 0 18px"><tr><td style="background:#1F3864;color:#FFFFFF;text-align:center;padding:14px 18px;font-family:Arial">
+   <div style="font-size:14pt;font-weight:bold;color:#FFFFFF">${esc(e.raz||e.fan)}</div>
+   ${cnpjDe(e)?`<div style="font-size:9pt;color:#FFFFFF">CNPJ: ${esc(cnpjDe(e))}${e.im?' · Inscrição Municipal: '+esc(e.im):''}</div>`:''}
+   <div style="font-size:9pt;color:#FFFFFF">${esc(e.end||e.cid||'')}</div>
+   <div style="font-size:9pt;color:#FFFFFF">${[e.tel?'Tel: '+esc(e.tel):'', e.ema?'E-mail: '+esc(e.ema):''].filter(Boolean).join(' · ')}</div></td></tr></table>`;
+}
+const CSS_WORD = `body{font-family:Arial;font-size:11pt;line-height:1.5;color:#1a1a1a}h1{color:#1F3864;font-size:13pt;text-align:center;margin:10px 0 16px}h2{color:#1F3864;font-size:11pt;border-bottom:2px solid #1F3864;padding-bottom:3px;margin-top:18px}
+table.d{width:100%;border-collapse:collapse;margin:8px 0}table.d th{background:#1F3864;color:#fff;padding:5px 7px;font-size:9pt;text-align:left}table.d td{padding:5px 7px;border-bottom:1px solid #d9d9d9;font-size:9pt}table.d td.n{text-align:right}
+.k{display:inline-block;border:1px solid #d9dee8;padding:8px 14px;margin:3px;text-align:center}.k b{display:block;font-size:16pt;color:#1F3864}.k span{font-size:8pt;color:#555}p{text-align:justify}`;
+function baixarDoc(html, nome){
+  const full = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="UTF-8"><style>@page{size:21cm 29.7cm;margin:1.6cm 1.8cm}${CSS_WORD}</style></head><body>${html}</body></html>`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+full], {type:'application/msword'}));
+  a.download = nome.replace(/[\\/:*?"<>|]+/g,'-') + '.doc'; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(), 1000);
+}
+const dataExtenso = (d=new Date()) => d.toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});
+const cidadeEmp2 = e => String(e.cid||'').split('/')[0].trim() || (localEmp(e).cidade) || 'Janaúba';
+function blocoAssinatura(s){
+  return `<div style="text-align:center;margin-top:60px"><div>_________________________________________</div>
+   <div style="font-weight:bold;margin-top:6px">${esc(s.nome)}</div>
+   <div style="font-size:10pt">CPF: ${esc(s.cpf)}${s.rg?' · RG: '+esc(s.rg):''}${s.crm?' · '+esc(s.crm):''}</div>
+   <div style="font-size:10pt">${esc(s.cargo)}</div></div>`;
+}
+
+// ════════════════ MODELOS DE DOCUMENTOS ════════════════
+const MODELOS = [
+ {id:'credenciamento', nome:'Carta de Solicitação de Credenciamento', desc:'Manifesta interesse no credenciamento junto à prefeitura ou consórcio.', campos:[{k:'orgao',l:'Órgão / consórcio destinatário'},{k:'edital',l:'Nº do edital / processo'},{k:'objeto',l:'Objeto do credenciamento',t:'textarea'}]},
+ {id:'unificada', nome:'Declaração Unificada', desc:'Menor aprendiz, fatos impeditivos, idoneidade, habilitação e aceite do edital.', campos:[{k:'orgao',l:'Órgão licitante'},{k:'edital',l:'Nº do edital / processo'}]},
+ {id:'vinculo', nome:'Declaração de Vínculo Profissional', desc:'Declara que o profissional integra o corpo clínico da empresa.', campos:[{k:'prof',l:'Nome do profissional'},{k:'crmprof',l:'CRM (nº/UF)'},{k:'esp',l:'Especialidade'}]},
+ {id:'procuracao', nome:'Procuração', desc:'Outorga poderes de representação em processos.', campos:[{k:'outorgado',l:'Nome do outorgado'},{k:'cpfout',l:'CPF do outorgado'},{k:'poderes',l:'Finalidade / poderes',t:'textarea'}]},
+ {id:'livre', nome:'Documento livre timbrado', desc:'Ofícios, comunicados e qualquer texto com o timbrado da empresa.', campos:[{k:'titulo',l:'Título do documento'},{k:'texto',l:'Texto',t:'textarea'}]},
+];
+function corpoModelo(id, e, v, s){
+  const R = `<strong>${esc(e.raz||e.fan)}</strong>, inscrita no CNPJ sob o nº ${esc(cnpjDe(e))}, com sede em ${esc(e.end)}`;
+  const P = t => `<p>${t}</p>`;
+  switch(id){
+    case 'credenciamento': return `<h1>CARTA DE SOLICITAÇÃO DE CREDENCIAMENTO</h1><p style="text-align:left">Ao(À)<br><strong>${esc(v.orgao)}</strong><br>Ref.: ${esc(v.edital)}</p>`
+      + P(`A empresa ${R}, neste ato representada por ${esc(s.nome)}, ${esc(s.cargo)}, vem, respeitosamente, manifestar interesse no credenciamento referente ao objeto: <strong>${esc(v.objeto)}</strong>, comprometendo-se a cumprir integralmente as exigências do edital e de seus anexos.`)
+      + P('Declara, ainda, que os documentos de habilitação anexos são autênticos e refletem a atual situação jurídica, fiscal e técnica da empresa.');
+    case 'unificada': return `<h1>DECLARAÇÃO UNIFICADA</h1><p style="text-align:left">Ao(À) ${esc(v.orgao)}<br>Ref.: ${esc(v.edital)}</p>`
+      + P(`A empresa ${R}, por intermédio de seu representante legal, ${esc(s.nome)}, DECLARA, sob as penas da lei:`)
+      + `<p style="margin-left:18px"><strong>1)</strong> Que não emprega menor de 18 (dezoito) anos em trabalho noturno, perigoso ou insalubre e não emprega menor de 16 (dezesseis) anos, salvo na condição de aprendiz, a partir de 14 (quatorze) anos, nos termos do inciso XXXIII do art. 7º da Constituição Federal;<br><br><strong>2)</strong> Que inexistem fatos impeditivos para sua habilitação no presente processo, ciente da obrigatoriedade de declarar ocorrências posteriores;<br><br><strong>3)</strong> Que não foi declarada inidônea para licitar ou contratar com a Administração Pública, em qualquer de suas esferas;<br><br><strong>4)</strong> Que cumpre plenamente os requisitos de habilitação exigidos no edital;<br><br><strong>5)</strong> Que os documentos apresentados são autênticos e refletem a atual situação da empresa;<br><br><strong>6)</strong> Que tomou conhecimento de todas as condições do edital e de seus anexos, aceitando-as integralmente.</p>`
+      + P('Por ser expressão da verdade, firma a presente declaração.');
+    case 'vinculo': return `<h1>DECLARAÇÃO DE VÍNCULO PROFISSIONAL</h1>`
+      + P(`A empresa ${R}, neste ato representada por ${esc(s.nome)}, ${esc(s.cargo)}, DECLARA, para os devidos fins, que o(a) profissional abaixo identificado(a) integra o corpo clínico desta empresa, mantendo vínculo profissional ativo:`)
+      + `<p style="margin-left:30px;text-align:left"><strong>Profissional:</strong> ${esc(v.prof)}<br><strong>CRM:</strong> ${esc(v.crmprof)}<br><strong>Especialidade:</strong> ${esc(v.esp)}</p>` + P('Por ser expressão da verdade, firma a presente declaração.');
+    case 'procuracao': return `<h1>PROCURAÇÃO</h1>`
+      + P(`<strong>OUTORGANTE:</strong> ${R}, neste ato representada por ${esc(s.nome)}, ${esc(s.cargo)}, CPF ${esc(s.cpf)}.`)
+      + P(`<strong>OUTORGADO(A):</strong> ${esc(v.outorgado)}, CPF ${esc(v.cpfout)}.`)
+      + P(`<strong>PODERES:</strong> Pelo presente instrumento, a outorgante nomeia e constitui o(a) outorgado(a) seu(sua) bastante procurador(a) para ${esc(v.poderes)}, podendo assinar documentos, apresentar propostas, interpor recursos e praticar todos os demais atos necessários ao fiel cumprimento deste mandato.`);
+    case 'livre': return `<h1>${esc(v.titulo).toUpperCase()}</h1>` + String(v.texto).split(/\n{2,}/).map(par => P(esc(par).replace(/\n/g,'<br>'))).join('');
+  }
+}
+VIEWS.modelos = () => {
+  const ger = ativos('modelosGerados').sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0)).slice(0,15);
+  return `<div class="banner info">Os documentos saem em Word com o timbrado da empresa (faixa azul #1F3864, Arial), dados completos e assinatura com nome, CPF, RG e cargo. Para documentos que precisam reproduzir o texto exato de um edital, me envie o edital pelo chat.</div>
+  <div class="mods">${MODELOS.map(m => `<button class="mod" onclick="A.modelo('${m.id}')"><div class="mi">${ic('file',22)}</div><div class="mt">${esc(m.nome)}</div><div class="md">${esc(m.desc)}</div><div class="ms">Gerar em Word</div></button>`).join('')}</div>
+  <div class="sect-t">Últimos documentos gerados</div>
+  <div class="card">${tabela([
+    {h:'Data', v:g => new Date(g.criadoEm).toLocaleString('pt-BR')}, {h:'Documento', v:g => `<span class="b">${esc(g.modeloNome)}</span>`},
+    {h:'Empresa', v:g => esc(empNome(g.empresa))}, {h:'Referência', v:g => esc(g.ref||'')}, {h:'Signatário', v:g => esc(g.signatario||'')}, {h:'Por', v:g => esc(usuarioNome(g.criadoPor))},
+    {h:'', v:g => `<button class="btn sm" onclick="event.stopPropagation();A.modelo('${g.modelo}','${g.id}')">Gerar de novo</button>`}], ger)}</div>`;
+};
+function signatariosDe(empId){ return (emp(empId)?.signatarios || []).filter(s => s && s.nome); }
+A.modelo = (id, deId) => {
+  const m = MODELOS.find(x=>x.id===id); const base = deId ? BY.modelosGerados[deId] : null;
+  const v = base?.valores || {};
+  abrirDrawer(m.nome, `<div class="form" id="md">
+     <div class="fld full"><label>Empresa (timbrado) <em>*</em></label><select class="sel" id="md-emp" onchange="A.mdEmp()">${opts(empsOrd().map(x=>[x.id,x.fan||x.raz]), base?.empresa||'', 'Escolha a empresa')}</select><div class="hint" id="md-empst"></div></div>
+     ${m.campos.map(c => `<div class="fld full"><label>${esc(c.l)} <em>*</em></label>${c.t==='textarea'?`<textarea class="ta" id="md-${c.k}">${esc(v[c.k]||'')}</textarea>`:`<input class="in" id="md-${c.k}" value="${esc(v[c.k]||'')}">`}</div>`).join('')}
+     <div class="fld full"><div class="sect-t" style="margin:6px 0 0">Signatário</div></div>
+     <div class="fld full"><label>Signatário cadastrado</label><select class="sel" id="md-sigsel" onchange="A.mdSig()"></select></div>
+     <div class="fld"><label>Nome completo <em>*</em></label><input class="in" id="md-snome"></div><div class="fld"><label>CPF <em>*</em></label><input class="in" id="md-scpf"></div>
+     <div class="fld"><label>RG</label><input class="in" id="md-srg"><div class="hint">Deixe em branco só para quem não usa RG nos documentos.</div></div><div class="fld"><label>Cargo / função <em>*</em></label><input class="in" id="md-scargo" placeholder="Ex.: Sócia administradora e Responsável Técnica"></div>
+     <div class="fld"><label>CRM (se houver)</label><input class="in" id="md-scrm"></div>
+     <div class="fld"><label class="ckl" style="padding-top:26px"><input type="checkbox" id="md-ssalvar" checked> Salvar este signatário na empresa</label></div>
+   </div>`, `<div class="sp"></div><button class="btn" onclick="A.fechar(true)">Cancelar</button><button class="btn pri" onclick="A.gerarModelo('${id}')">${ic('down',15)} Gerar Word</button>`);
+  DR = {sujo:false};
+  if(base){ A.mdEmp(); const s = base.sig||{}; ['nome','cpf','rg','cargo','crm'].forEach(k => $('#md-s'+k).value = s[k]||''); }
+};
+A.mdEmp = () => {
+  const e = emp($('#md-emp').value); const st = $('#md-empst');
+  if(!e){ st.textContent=''; $('#md-sigsel').innerHTML=''; return; }
+  const f = faltaDadosEmp(e);
+  st.innerHTML = f.length ? `<span style="color:var(--red)">Faltam dados da empresa para o timbrado: ${esc(f.join(', '))}. <a href="#" onclick="event.preventDefault();A.fechar(true);A.abrir('emps','${e.id}')">Completar em Empresas</a></span>` : `<span style="color:var(--green)">Dados do timbrado completos.</span>`;
+  const ss = signatariosDe(e.id);
+  $('#md-sigsel').innerHTML = `<option value="">— novo signatário —</option>` + ss.map((s,i) => `<option value="${i}">${esc(s.nome)} · ${esc(s.cargo||'')}</option>`).join('');
+  if(ss.length){ $('#md-sigsel').value='0'; A.mdSig(); }
+};
+A.mdSig = () => { const e = emp($('#md-emp').value); const i = $('#md-sigsel').value; const s = i==='' ? {} : signatariosDe(e.id)[+i]||{}; ['nome','cpf','rg','cargo','crm'].forEach(k => $('#md-s'+k).value = s[k]||''); };
+A.gerarModelo = async id => {
+  const m = MODELOS.find(x=>x.id===id); const e = emp($('#md-emp').value);
+  if(!e) return toast('Escolha a empresa', true);
+  const f = faltaDadosEmp(e); if(f.length) return toast('Complete os dados da empresa antes: '+f.join(', '), true);
+  const v = {}; for(const c of m.campos){ v[c.k] = $('#md-'+c.k).value.trim(); if(!v[c.k]) return toast('Preencha: '+c.l, true); }
+  const s = {nome:$('#md-snome').value.trim(), cpf:$('#md-scpf').value.trim(), rg:$('#md-srg').value.trim(), cargo:$('#md-scargo').value.trim(), crm:$('#md-scrm').value.trim()};
+  if(!s.nome || !s.cpf || !s.cargo) return toast('Preencha nome completo, CPF e cargo do signatário', true);
+  if($('#md-ssalvar').checked){ const ss = signatariosDe(e.id); const i = ss.findIndex(x => norm(x.nome)===norm(s.nome)); if(i>-1) ss[i]=s; else ss.push(s); await salvar('emps', {id:e.id, signatarios:ss}, {titulo:`Signatário ${s.nome} · ${e.fan||e.raz}`}); }
+  const local = `<p style="text-align:right;margin-top:36px">${esc(cidadeEmp2(e))}, ${dataExtenso()}.</p>`;
+  baixarDoc(timbrado(e) + corpoModelo(id, e, v, s) + local + blocoAssinatura(s), `${m.nome} - ${e.fan||e.raz}${v.edital?' - '+v.edital:''}`);
+  await salvar('modelosGerados', {modelo:id, modeloNome:m.nome, empresa:e.id, valores:v, sig:s, signatario:s.nome, ref:v.edital||v.orgao||v.titulo||v.outorgado||v.prof||''}, {acao:'gerou', titulo:`${m.nome} · ${e.fan||e.raz}`});
+  toast('Documento gerado'); A.fechar(true);
+};
+
+// ════════════════ PACOTE DE DOCUMENTOS (ZIP) ════════════════
+const driveIdDe = d => d.fileId || ((String(d.drv||'').match(/\/d\/([\w-]{20,})/)||[])[1]) || ((String(d.drv||'').match(/[?&]id=([\w-]{20,})/)||[])[1]) || '';
+A.pacote = empId => {
+  const e = emp(empId); const ds = ativos('docs').filter(d => d.empresa===empId).sort((a,b) => (a.tipo||'').localeCompare(b.tipo||''));
+  abrirDrawer(`Pacote de documentos · ${e.fan||e.raz}`, `<div class="banner info">Marque os documentos do processo. O sistema baixa os arquivos do Drive e monta um ZIP com tudo, mais um checklist em Word. Documentos vencidos aparecem em vermelho.</div>
+    <div class="form" style="margin-bottom:14px"><div class="fld full"><label>Contratante / processo <em>*</em></label><input class="in" id="pk-ref" placeholder="Ex.: Prefeitura de Mamonas — Credenciamento 05/2026"></div></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn sm" onclick="document.querySelectorAll('.pk-c').forEach(c=>c.checked=!!c.dataset.ok)">Marcar os que têm arquivo e estão válidos</button><button class="btn sm" onclick="document.querySelectorAll('.pk-c').forEach(c=>c.checked=false)">Desmarcar todos</button></div>
+    <div class="card"><div class="bd np">${ds.map(d => { const s = statusDoc(d); const tem = !!driveIdDe(d)||!!d.drv; return `<label class="chk" style="cursor:pointer"><input type="checkbox" class="pk-c" value="${d.id}" ${tem&&s.k!=='venc'?'data-ok="1"':''} style="width:18px;height:18px"><span class="txt" style="flex:1"><b>${esc(d.tipo)}</b><span class="small muted"> · ${d.naovence?'não vence':d.vencimento?'validade '+fmtD(d.vencimento):'sem data'}${tem?'':' · sem arquivo'}</span></span>${tag(s.t,s.c)}</label>`; }).join('') || vazio('Nenhum documento cadastrado')}</div></div>
+    <div id="pk-st" class="small muted" style="margin-top:12px"></div>`,
+   `<div class="sp"></div><button class="btn" onclick="A.fechar(true)">Cancelar</button><button class="btn pri" id="pk-btn" onclick="A.gerarPacote('${empId}')">${ic('zip',15)} Gerar pacote ZIP</button>`);
+  DR = {sujo:false};
+};
+A.gerarPacote = async empId => {
+  const e = emp(empId); const ref = $('#pk-ref').value.trim();
+  const ids = [...document.querySelectorAll('.pk-c:checked')].map(c => c.value);
+  if(!ref) return toast('Informe o contratante / processo', true);
+  if(!ids.length) return toast('Marque ao menos um documento', true);
+  const st = $('#pk-st'), bt = $('#pk-btn'); bt.disabled = true;
+  try {
+    st.textContent = 'Preparando…'; await lib('jszip');
+    const zip = new JSZip(); const linhas = []; let ok = 0; const usados = {};
+    const precisaDrive = ids.some(id => driveIdDe(BY.docs[id]));
+    if(precisaDrive) await garantirDrive();
+    for(const [i,id] of ids.entries()){
+      const d = BY.docs[id]; const s = statusDoc(d); const fid = driveIdDe(d); let situ = 'sem arquivo no sistema';
+      st.textContent = `Baixando ${i+1} de ${ids.length}: ${d.tipo}…`;
+      if(fid){
+        try {
+          const meta = await (await fetch(`https://www.googleapis.com/drive/v3/files/${fid}?fields=name,mimeType`, {headers:{Authorization:'Bearer '+driveTok}})).json();
+          if(meta.error) throw new Error(meta.error.message);
+          if(String(meta.mimeType).startsWith('application/vnd.google-apps')) throw new Error('arquivo do Google (Docs/Planilhas), baixe pelo link');
+          const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`, {headers:{Authorization:'Bearer '+driveTok}});
+          if(!r.ok) throw new Error('Drive '+r.status);
+          const ext = (meta.name||'').includes('.') ? meta.name.split('.').pop() : 'pdf';
+          let nome = `${String(i+1).padStart(2,'0')} - ${d.tipo}.${ext}`.replace(/[\\/:*?"<>|]+/g,'-'); if(usados[nome]) nome = nome.replace('.'+ext, ` (${i+1}).${ext}`); usados[nome]=1;
+          zip.file(nome, await r.blob()); ok++; situ = 'incluído no ZIP';
+        } catch(x){ situ = 'não baixado ('+x.message+') — abrir pelo link'; }
+      }
+      linhas.push(`<tr><td>${i+1}</td><td>${esc(d.tipo)}</td><td>${d.naovence?'Não vence':fmtD(d.vencimento)||'Sem data'}</td><td>${esc(s.t)}</td><td>${esc(situ)}${d.drv?` · <a href="${esc(d.drv)}">link</a>`:''}</td></tr>`);
+    }
+    const venc = ids.filter(id => statusDoc(BY.docs[id]).k==='venc').length;
+    const chk = timbrado(faltaDadosEmp(e).length ? Object.assign({}, e, {raz:e.raz||e.fan}) : e) + `<h1>CHECKLIST DE DOCUMENTOS</h1><p style="text-align:left"><strong>Empresa:</strong> ${esc(e.raz||e.fan)}<br><strong>Contratante / processo:</strong> ${esc(ref)}<br><strong>Data:</strong> ${fmtD(hoje())}</p>`
+      + (venc ? `<p style="color:#A32D2D"><strong>Atenção:</strong> ${venc} documento(s) vencido(s) no pacote.</p>` : '')
+      + `<table class="d"><tr><th>#</th><th>Documento</th><th>Validade</th><th>Situação</th><th>Arquivo</th></tr>${linhas.join('')}</table>`;
+    zip.file('00 - CHECKLIST.doc', '﻿<html><head><meta charset="UTF-8"><style>'+CSS_WORD+'</style></head><body>'+chk+'</body></html>');
+    st.textContent = 'Compactando…';
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Pacote - ${e.fan||e.raz} - ${ref}.zip`.replace(/[\\/:*?"<>|]+/g,'-'); document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(), 1000);
+    registrar('gerou', 'pacotes', '', `Pacote de documentos · ${e.fan||e.raz} · ${ref} (${ok} de ${ids.length} arquivos)`);
+    toast(`Pacote gerado: ${ok} de ${ids.length} arquivo(s) dentro do ZIP`); A.fechar(true);
+  } catch(x){ st.textContent=''; toast('Não foi possível gerar: '+x.message, true); bt.disabled=false; }
+};
+
+// ════════════════ RELATÓRIOS ════════════════
+function periodoRel(){
+  const t = fget('relatorios','tper','mes'), ano = +fget('relatorios','ano', new Date().getFullYear()), i = +fget('relatorios','iper', t==='mes'?new Date().getMonth():0);
+  let m0 = 0, m1 = 11, rot = 'Ano '+ano;
+  if(t==='mes'){ m0=m1=i; rot = `${['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][i]} / ${ano}`; }
+  if(t==='trim'){ m0=i*3; m1=m0+2; rot = `${i+1}º trimestre / ${ano}`; }
+  if(t==='sem'){ m0=i*6; m1=m0+5; rot = `${i+1}º semestre / ${ano}`; }
+  const ini = `${ano}-${pad(m0+1)}-01`, fim = isoD(new Date(ano, m1+1, 0));
+  return {t, ano, i, m0, m1, rot, ini, fim, meses: Array.from({length:m1-m0+1}, (_,k) => `${ano}-${pad(m0+k+1)}`)};
+}
+function dadosRel(){
+  const empId = fget('relatorios','emp',''), P = periodoRel();
+  const procs = ativos('proc').filter(p => !empId || p.empresa===empId);
+  const munProc = new Set(procs.map(p=>p.municipio).filter(Boolean));
+  const cont = ativos('contatos').filter(c => c.data>=P.ini && c.data<=P.fim && (!empId || c.empresa===empId || munProc.has(c.municipio)));
+  const docs = ativos('docs').filter(d => !empId || d.empresa===empId);
+  const fatPor = procs.map(p => ({p, v:P.meses.map(k => Number(((BY.fat[p.id]||{}).valores||{})[k])||0)})).map(x => Object.assign(x, {t:x.v.reduce((a,b)=>a+b,0)}));
+  const fatTot = fatPor.reduce((s,x)=>s+x.t,0);
+  const ativosC = procs.filter(p => p.fase==='Contrato Ativo');
+  const semFat = ativosC.filter(p => !fatPor.find(x=>x.p.id===p.id)?.t);
+  const andam = procs.filter(p => !['Contrato Ativo','Arquivado','Contrato Devolvido'].includes(p.fase||''));
+  const venc = docs.filter(d => statusDoc(d).k==='venc'), logo = docs.filter(d => statusDoc(d).k==='logo');
+  const ult = {}; ativos('contatos').forEach(c => { if(c.municipio && (!ult[c.municipio] || c.data>ult[c.municipio])) ult[c.municipio]=c.data; });
+  const frios = [...munProc].filter(m => !ult[m] || diasAte(ult[m]) < -45).map(m => muniNome(m)).filter(Boolean).sort();
+  const P2 = {ano:P.ano-1, meses:P.meses.map(k => (P.ano-1)+k.slice(4))};
+  const fatAnt = procs.reduce((s,p) => s + P2.meses.reduce((a,k)=>a+(Number(((BY.fat[p.id]||{}).valores||{})[k])||0),0), 0);
+  return {empId, e: empId ? emp(empId) : null, P, procs, cont, docs, fatPor, fatTot, fatAnt, ativosC, semFat, andam, venc, logo, frios};
+}
+function sugestoes(D){
+  const s = [];
+  if(D.venc.length) s.push(`Renovar ${D.venc.length} documento(s) vencido(s): ${D.venc.slice(0,8).map(d=>d.tipo+(D.empId?'':' ('+empNome(d.empresa)+')')).join(', ')}${D.venc.length>8?'…':''}.`);
+  if(D.logo.length) s.push(`Programar a renovação de ${D.logo.length} documento(s) que vencem nos próximos 15 dias.`);
+  if(D.semFat.length) s.push(`Verificar ${D.semFat.length} contrato(s) ativo(s) sem faturamento lançado no período: ${D.semFat.slice(0,6).map(p=>contratante(p)).join(', ')}${D.semFat.length>6?'…':''}.`);
+  if(D.frios.length) s.push(`Retomar contato com ${D.frios.length} município(s) da carteira sem contato há mais de 45 dias: ${D.frios.slice(0,10).join(', ')}${D.frios.length>10?'…':''}.`);
+  if(D.andam.length) s.push(`Acompanhar ${D.andam.length} processo(s) em andamento até a assinatura do contrato.`);
+  if(D.fatAnt && D.fatTot < D.fatAnt) s.push(`O faturamento ficou ${Math.round((1-D.fatTot/D.fatAnt)*100)}% abaixo do mesmo período do ano anterior; avaliar volume de agendamentos com os municípios.`);
+  return s;
+}
+const SECOES = [['ind','Indicadores'],['fin','Faturamento'],['rel','Relacionamento'],['doc','Documentação'],['proc','Processos'],['prop','Proposta de intervenção']];
+function htmlRel(D, tipo, word){
+  const sec = k => fget('relatorios','s_'+k, true) !== false;
+  const nomeT = {sintetico:'Sintético', analitico:'Analítico', evolucao:'Evolução do Cliente', equipe:'Atividades da Equipe'}[tipo];
+  const quem = D.e ? (D.e.raz||D.e.fan) : 'Grupo Ressonar — todas as empresas';
+  const K = (l,v) => word ? `<div class="k"><b>${v}</b><span>${l}</span></div>` : `<div class="kpi"><div class="l">${l}</div><div class="v" style="font-size:20px">${v}</div></div>`;
+  const T = (cab, linhas) => word ? `<table class="d"><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr>${linhas.join('')}</table>` : `<div class="tw"><table class="t"><thead><tr>${cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.join('')}</tbody></table></div>`;
+  const H2 = t => word ? `<h2>${t}</h2>` : `<div class="sect-t">${t}</div>`;
+  let h = word ? `<h1>RELATÓRIO ${nomeT.toUpperCase()}</h1><p style="text-align:center;margin-top:-8px">${esc(quem)} · ${esc(D.P.rot)}<br><span style="font-size:9pt;color:#555">Emitido em ${fmtD(hoje())} por BGC Consultoria</span></p>` : '';
+  if(tipo==='equipe') return h + (A._relEquipe || '<div class="muted">Carregando atividades…</div>');
+  if(tipo==='evolucao'){
+    const anoM = Array.from({length:12}, (_,i) => `${D.P.ano}-${pad(i+1)}`);
+    const vals = anoM.map(k => D.procs.reduce((s,p)=>s+(Number(((BY.fat[p.id]||{}).valores||{})[k])||0),0));
+    const ant = anoM.map(k => D.procs.reduce((s,p)=>s+(Number(((BY.fat[p.id]||{}).valores||{})[(D.P.ano-1)+k.slice(4)])||0),0));
+    const ctt = anoM.map(k => ativos('contatos').filter(c => (c.data||'').startsWith(k) && (!D.empId || c.empresa===D.empId || D.procs.some(p=>p.municipio===c.municipio))).length);
+    const mx = Math.max(1, ...vals, ...ant);
+    h += word ? '' : `<div style="display:flex;align-items:flex-end;gap:6px;height:150px;margin:6px 0 4px">${vals.map((v,i)=>`<div style="flex:1;display:flex;gap:2px;align-items:flex-end;height:100%" title="${MESES[i]}: ${brl(v)} (ano anterior ${brl(ant[i])})"><div style="flex:1;background:#C9D6EC;height:${ant[i]/mx*100}%"></div><div style="flex:1;background:var(--navy);height:${v/mx*100}%"></div></div>`).join('')}</div><div style="display:flex;gap:6px;margin-bottom:6px">${MESES.map(m=>`<div style="flex:1;text-align:center;font-size:11px;color:var(--faint)">${m}</div>`).join('')}</div><div class="small muted" style="margin-bottom:12px">■ ${D.P.ano} &nbsp; <span style="color:#9fb4d6">■</span> ${D.P.ano-1}</div>`;
+    h += T(['Mês', `Faturamento ${D.P.ano}`, `Faturamento ${D.P.ano-1}`, 'Variação', 'Contatos'], anoM.map((k,i) => `<tr><td>${MESES[i]}</td><td class="n num">${brl(vals[i])}</td><td class="n num">${brl(ant[i])}</td><td class="n num">${ant[i]?(vals[i]>=ant[i]?'+':'')+Math.round((vals[i]/ant[i]-1)*100)+'%':'—'}</td><td class="n num">${ctt[i]}</td></tr>`).concat([`<tr><td><b>Total</b></td><td class="n num"><b>${brl(vals.reduce((a,b)=>a+b,0))}</b></td><td class="n num"><b>${brl(ant.reduce((a,b)=>a+b,0))}</b></td><td></td><td class="n num"><b>${ctt.reduce((a,b)=>a+b,0)}</b></td></tr>`]));
+    return h;
+  }
+  if(sec('ind')) h += H2('Indicadores do período') + (word?'':'<div class="kpis">') + K('Contratos ativos', D.ativosC.length) + K('Processos em andamento', D.andam.length) + K('Faturamento no período', brl0(D.fatTot)) + K('Média por contrato ativo', brl0(D.ativosC.length ? D.fatTot/D.ativosC.length : 0)) + K('Contatos realizados', D.cont.length) + K('Documentos vencidos', D.venc.length) + (word?'':'</div>');
+  if(sec('fin')){
+    h += H2('Faturamento');
+    h += `<p>No período, o faturamento lançado foi de <strong>${brl(D.fatTot)}</strong>${D.fatAnt?`, contra ${brl(D.fatAnt)} no mesmo período de ${D.P.ano-1} (${D.fatTot>=D.fatAnt?'+':''}${Math.round((D.fatTot/D.fatAnt-1)*100)}%)`:''}.</p>`;
+    if(tipo==='analitico'){ const ls = D.fatPor.filter(x=>x.t).sort((a,b)=>b.t-a.t); h += T(['Empresa','Contratante', ...(D.P.meses.length<=6?D.P.meses.map(k=>MESES[+k.slice(5)-1]):[]), 'Total'], ls.map(x => `<tr><td>${esc(empNome(x.p.empresa))}</td><td>${esc(contratante(x.p))}</td>${D.P.meses.length<=6?x.v.map(v=>`<td class="n num">${v?brl(v):'—'}</td>`).join(''):''}<td class="n num"><b>${brl(x.t)}</b></td></tr>`)); }
+  }
+  if(sec('rel')){
+    h += H2('Relacionamento com os municípios');
+    const can = {}; D.cont.forEach(c => can[c.canal||'Outro']=(can[c.canal||'Outro']||0)+1);
+    h += `<p>Foram registrados <strong>${D.cont.length}</strong> contato(s) no período${Object.keys(can).length?': '+Object.entries(can).map(([k,v])=>`${v} ${k.toLowerCase()}`).join(', '):''}.${D.frios.length?` ${D.frios.length} município(s) da carteira estão sem contato há mais de 45 dias.`:''}</p>`;
+    if(tipo==='analitico' && D.cont.length) h += T(['Data','Município','Pessoa','Canal','Resumo','Resultado'], D.cont.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(c => `<tr><td>${fmtD(c.data)}</td><td>${esc(muniNome(c.municipio))}</td><td>${esc(c.pessoa||c.funcao||'')}</td><td>${esc(c.canal||'')}</td><td>${esc(c.resumo||'')}</td><td>${esc(c.resultado||'')}</td></tr>`));
+  }
+  if(sec('doc')){
+    h += H2('Documentação');
+    h += `<p>${D.docs.length} documento(s) cadastrados: <strong>${D.venc.length}</strong> vencido(s) e <strong>${D.logo.length}</strong> vencendo em até 15 dias.</p>`;
+    if((tipo==='analitico') && (D.venc.length||D.logo.length)) h += T(['Empresa','Documento','Validade','Situação'], [...D.venc, ...D.logo].sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||'')).map(d => `<tr><td>${esc(empNome(d.empresa))}</td><td>${esc(d.tipo)}</td><td>${fmtD(d.vencimento)}</td><td>${esc(statusDoc(d).t)}</td></tr>`));
+  }
+  if(sec('proc')){
+    h += H2('Processos e contratos');
+    h += `<p>${D.ativosC.length} contrato(s) ativo(s) e ${D.andam.length} processo(s) em andamento.</p>`;
+    if(tipo==='analitico' && D.andam.length) h += T(['Empresa','Contratante','Fase','Nº'], D.andam.map(p => `<tr><td>${esc(empNome(p.empresa))}</td><td>${esc(contratante(p))}</td><td>${esc(p.fase||'')}</td><td>${esc(p.num||'')}</td></tr>`));
+  }
+  if(sec('prop')){
+    const txt = fget('relatorios','prop','');
+    h += H2('Proposta de intervenção');
+    h += txt.trim() ? txt.split(/\n+/).map(l => `<p>${esc(l)}</p>`).join('') : `<ol>${sugestoes(D).map(s=>`<li style="margin-bottom:6px">${esc(s)}</li>`).join('') || '<li>Sem pontos críticos no período.</li>'}</ol>`;
+  }
+  return h;
+}
+async function carregarEquipeRel(){
+  const P = periodoRel(); const k = P.ini+P.fim; if(A._relEqK===k) return; A._relEqK = k; A._relEquipe = '<div class="muted">Carregando atividades…</div>';
+  try {
+    const log = await B.getRange('log','dia',P.ini,P.fim); const dia = await B.getRange('diario','dia',P.ini,P.fim);
+    const us = {}; log.forEach(l => { const u = us[l.user] ||= {nome:l.nome||usuarioNome(l.user), tot:0, cont:0, concl:0, docs:0, gerou:0, dias:new Set()}; u.tot++; u.dias.add(l.dia); if(l.col==='contatos'&&l.acao==='criou') u.cont++; if(l.acao==='concluiu') u.concl++; if(l.col==='docs') u.docs++; if(l.acao==='gerou') u.gerou++; });
+    const fech = {}; dia.forEach(d => { if(d.fechadoEm) fech[d.user]=(fech[d.user]||0)+1; });
+    A._relEquipe = `<div class="tw"><table class="t d"><thead><tr><th>Pessoa</th><th class="num">Dias com atividade</th><th class="num">Ações</th><th class="num">Contatos</th><th class="num">Tarefas concluídas</th><th class="num">Documentos</th><th class="num">Docs gerados</th><th class="num">Dias fechados</th></tr></thead><tbody>${Object.entries(us).map(([e,u]) => `<tr><td>${esc(u.nome)}</td><td class="n num">${u.dias.size}</td><td class="n num">${u.tot}</td><td class="n num">${u.cont}</td><td class="n num">${u.concl}</td><td class="n num">${u.docs}</td><td class="n num">${u.gerou}</td><td class="n num">${fech[e]||0}</td></tr>`).join('') || '<tr><td colspan="8">Nenhuma atividade no período.</td></tr>'}</tbody></table></div>`;
+  } catch(x){ A._relEquipe = `<div class="banner warn">Não foi possível carregar: ${esc(x.message)}</div>`; }
+  render(false);
+}
+VIEWS.relatorios = () => {
+  const v='relatorios', tipo=fget(v,'tipo','sintetico'), P = periodoRel(), D = dadosRel();
+  if(tipo==='equipe') carregarEquipeRel();
+  const anos = [...new Set([new Date().getFullYear(), ...ativos('fat').flatMap(f=>Object.keys(f.valores||{}).map(k=>+k.slice(0,4)))])].sort((a,b)=>b-a);
+  const iOpts = P.t==='mes' ? MESES.map((m,i)=>[i,m]) : P.t==='trim' ? [0,1,2,3].map(i=>[i,(i+1)+'º trimestre']) : P.t==='sem' ? [[0,'1º semestre'],[1,'2º semestre']] : [[0,'Ano completo']];
+  return `<div class="toolbar">${chipsF(v,'tipo',[['sintetico','Sintético'],['analitico','Analítico'],['evolucao','Evolução do cliente'],['equipe','Atividades da equipe']],tipo)}</div>
+   <div class="toolbar"><select class="sel" onchange="A.f('${v}','emp',this.value)">${opts(empsOrd().map(x=>[x.id,x.fan||x.raz]), D.empId, 'Todas as empresas')}</select>
+    ${tipo==='evolucao'?'':`<select class="sel" onchange="(UI.f.relatorios||={}).iper=0;A.f('${v}','tper',this.value)">${opts([['mes','Mês'],['trim','Trimestre'],['sem','Semestre'],['ano','Ano']],P.t)}</select><select class="sel" onchange="A.f('${v}','iper',this.value)">${opts(iOpts,P.i)}</select>`}
+    <select class="sel" onchange="A.f('${v}','ano',this.value)">${opts(anos,P.ano)}</select><div class="sp"></div>
+    <button class="btn pri" onclick="A.relWord()">${ic('down',15)} Baixar Word</button></div>
+   ${['sintetico','analitico'].includes(tipo)?`<div class="toolbar"><span class="small muted">Seções:</span>${SECOES.map(([k,n]) => `<label class="chip${fget(v,'s_'+k,true)!==false?' on':''}" style="cursor:pointer"><input type="checkbox" class="hidden" ${fget(v,'s_'+k,true)!==false?'checked':''} onchange="A.f('${v}','s_${k}',this.checked)">${n}</label>`).join('')}</div>`:''}
+   <div class="card"><div class="hd"><h3>${esc(D.e?(D.e.fan||D.e.raz):'Todas as empresas')} · ${esc(tipo==='evolucao'?'Ano '+P.ano:P.rot)}</h3></div><div class="bd">${htmlRel(D, tipo, false)}</div></div>
+   ${['sintetico','analitico'].includes(tipo) && fget(v,'s_prop',true)!==false ? `<div class="card" style="margin-top:16px"><div class="hd"><h3>Proposta de intervenção</h3><div class="sp"></div><span class="small muted">Deixe em branco para usar as sugestões automáticas</span></div><div class="bd"><textarea class="ta" id="rel-prop" style="min-height:110px" placeholder="${esc(sugestoes(D).join('\n'))}" onchange="A.f('relatorios','prop',this.value)">${esc(fget(v,'prop',''))}</textarea></div></div>`:''}`;
+};
+A.relWord = () => {
+  const tipo = fget('relatorios','tipo','sintetico'); const D = dadosRel();
+  const pv = $('#rel-prop'); if(pv) (UI.f.relatorios ||= {}).prop = pv.value;
+  const cab = D.e ? (faltaDadosEmp(D.e).length ? Object.assign({}, D.e, {raz:D.e.raz||D.e.fan}) : D.e) : BGC_EMP;
+  const nomeT = {sintetico:'Sintético', analitico:'Analítico', evolucao:'Evolução do Cliente', equipe:'Atividades da Equipe'}[tipo];
+  baixarDoc(timbrado(cab) + htmlRel(D, tipo, true) + `<p style="text-align:right;margin-top:30px">Janaúba, ${dataExtenso()}.</p><div style="text-align:center;margin-top:40px"><div>_________________________________________</div><div style="font-weight:bold;margin-top:6px">Bruno Gabriel Cardoso da Silva</div><div style="font-size:10pt">Consultor Comercial — BGC Consultoria</div></div>`,
+    `Relatório ${nomeT} - ${D.e?(D.e.fan||D.e.raz):'Grupo Ressonar'} - ${tipo==='evolucao'?D.P.ano:D.P.rot}`);
+  registrar('gerou', 'relatorios', '', `Relatório ${nomeT} · ${D.e?(D.e.fan||D.e.raz):'todas as empresas'} · ${tipo==='evolucao'?D.P.ano:D.P.rot}`);
+};
+
+// ════════════════ ORÇAMENTOS E TABELAS DE PREÇOS ════════════════
+const TABS_PRECO = [['cheia','Tabela cheia'],['parceria','Tabela de parceria / desconto']];
+const tabelaDe = (empId, tipo) => BY.precos[`${empId}__${tipo}`];
+VIEWS.orcamentos = () => {
+  const v='orcamentos', aba=fget(v,'aba','orc');
+  const top = `<div class="toolbar">${chipsF(v,'aba',[['orc','Orçamentos'],['tab','Tabelas de preços']],aba)}<div class="sp"></div>${aba==='orc'?`<button class="btn pri" onclick="A.orcNovo()">${ic('plus',16)} Novo orçamento</button>`:''}</div>`;
+  if(aba==='tab'){
+    return top + `<div class="banner info">Cada empresa pode ter duas tabelas: cheia e de parceria/desconto. Importe a planilha (.xlsx ou .csv): o sistema lê as colunas de código, descrição e valor. Quando a planilha tiver “Val. Tot.”, é essa coluna que vale.</div>
+    <div class="card">${tabela([
+      {h:'Empresa', v:e => `<span class="b">${esc(e.fan||e.raz)}</span>`},
+      ...TABS_PRECO.map(([t,n]) => ({h:n, v:e => { const tb = tabelaDe(e.id,t); return tb ? `${tb.itens.length} itens <span class="small faint">· ${esc(tb.arquivo||'')} · ${new Date(tb.atualizadoEm||tb.criadoEm).toLocaleDateString('pt-BR')}</span>` : '<span class="faint small">não cadastrada</span>'; }})),
+      {h:'', v:e => TABS_PRECO.map(([t,n]) => `<label class="btn sm" style="margin:2px">${ic('up',13)} ${t==='cheia'?'Cheia':'Parceria'}<input type="file" class="hidden" accept=".xlsx,.xls,.csv" onchange="A.importarTabela(this,'${e.id}','${t}')"></label>`).join('') + TABS_PRECO.map(([t]) => tabelaDe(e.id,t)?`<button class="btn sm ghost" onclick="A.verTabela('${e.id}','${t}')">Ver ${t}</button>`:'').join('')},
+    ], empsOrd())}</div>`;
+  }
+  const ls = ativos('orcamentos').sort((a,b)=>(b.criadoEm||0)-(a.criadoEm||0));
+  return top + `<div class="card">${tabela([
+    {h:'Data', v:o => fmtD(o.data)}, {h:'Empresa', v:o => `<span class="b">${esc(empNome(o.empresa))}</span>`}, {h:'Destinatário', v:o => esc(o.dest||'')},
+    {h:'Tabela', v:o => tag(o.tabela==='cheia'?'Cheia':'Parceria', o.tabela==='cheia'?'':'blue')}, {h:'Itens', cls:'num', v:o => (o.itens||[]).length}, {h:'Total', cls:'num', v:o => `<b>${brl(o.total)}</b>`},
+    {h:'Por', v:o => esc(usuarioNome(o.criadoPor))}], ls, o => `A.orcAbrir('${o.id}')`)}</div>`;
+};
+function lerPlanilha(rows){
+  // encontra a linha de cabeçalho e as colunas de código / descrição / valor (preferindo "Val. Tot.")
+  const n = s => norm(s).replace(/[^a-z0-9]/g,'');
+  let hi = rows.findIndex(r => r.some(c => /descri|procedimento|exame/.test(norm(c))) && r.some(c => /val|preco|r\$/.test(norm(c))));
+  if(hi < 0) throw new Error('Não encontrei as colunas de descrição e valor na planilha');
+  const H = rows[hi].map(n);
+  const ci = H.findIndex(h => /^(codigo|cod|tuss|cbhpm)/.test(h)), mi = H.findIndex(h => /mnem/.test(h)), di = H.findIndex(h => /descri|procedimento|exame/.test(h));
+  let vi = H.findIndex(h => /valtot|valortotal/.test(h)); if(vi<0) vi = H.findIndex(h => /^val|valor|preco/.test(h));
+  const num = x => typeof x==='number' ? x : Number(String(x||'').replace(/[R$\s.]/g,'').replace(',','.'));
+  const itens = []; let setor = '';
+  for(const r of rows.slice(hi+1)){
+    if(norm(r[0])==='setor' && r[1]) { setor = String(r[1]).trim(); continue; }
+    const d = String(r[di]||'').trim(); const val = num(r[vi]);
+    if(!d) continue; if(!val || isNaN(val)) { if(!r[vi] && d && !r[ci]) setor = d; continue; }
+    itens.push({setor, mnem:mi>-1?String(r[mi]||'').trim():'', cod:ci>-1?String(r[ci]||'').trim():'', desc:d, valor:Math.round(val*100)/100});
+  }
+  if(!itens.length) throw new Error('Nenhum item com valor encontrado');
+  return itens;
+}
+A.importarTabela = async (input, empId, tipo) => {
+  const f = input.files[0]; input.value=''; if(!f) return;
+  try {
+    await lib('xlsx'); const wb = XLSX.read(await f.arrayBuffer(), {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:true, defval:''});
+    const itens = lerPlanilha(rows);
+    if(!await perguntar(`Importar ${itens.length} itens?`, `Tabela ${tipo==='cheia'?'cheia':'de parceria'} de ${empNome(empId)}, do arquivo ${f.name}. Exemplo: ${itens[0].desc} — ${brl(itens[0].valor)}. A tabela anterior desta empresa (se houver) será substituída e fica no histórico.`, 'Importar')) return;
+    await salvar('precos', {id:`${empId}__${tipo}`, empresa:empId, tipo, arquivo:f.name, itens}, {titulo:`Tabela ${tipo} · ${empNome(empId)} (${itens.length} itens)`});
+    toast('Tabela importada');
+  } catch(x){ toast('Não foi possível importar: '+x.message, true); }
+};
+A.verTabela = (empId, tipo) => {
+  const tb = tabelaDe(empId, tipo); if(!tb) return;
+  abrirDrawer(`Tabela ${tipo==='cheia'?'cheia':'de parceria'} · ${empNome(empId)}`, `<input class="in" style="width:100%;margin-bottom:12px" placeholder="Buscar exame…" oninput="document.querySelectorAll('#vt tr[data-q]').forEach(r=>r.style.display=r.dataset.q.includes(A._n(this.value))?'':'none')">
+   <div class="tw"><table class="t" id="vt"><thead><tr><th>Setor</th><th>Código</th><th>Descrição</th><th class="num">Valor</th></tr></thead><tbody>${tb.itens.map(i => `<tr data-q="${esc(norm(i.setor+' '+i.cod+' '+i.mnem+' '+i.desc))}"><td class="small">${esc(i.setor)}</td><td class="small">${esc(i.cod)}</td><td>${esc(i.desc)}</td><td class="num">${brl(i.valor)}</td></tr>`).join('')}</tbody></table></div>`, `<div class="sp"></div><button class="btn" onclick="A.fechar(true)">Fechar</button>`);
+};
+A._n = norm;
+
+// ---- montar orçamento ----
+window.ORC = null;
+A.orcNovo = () => { ORC = {id:null, data:hoje(), empresa:'', tabela:'', dest:'', ref:'', validade:'60 dias', obs:'', itens:[], sig:{}}; orcDrawer(); };
+A.orcAbrir = id => { const o = BY.orcamentos[id]; ORC = JSON.parse(JSON.stringify(o)); orcDrawer(); };
+function orcDrawer(){
+  const o = ORC; const tb = o.empresa && o.tabela ? tabelaDe(o.empresa, o.tabela) : null;
+  const total = o.itens.reduce((s,i)=>s+i.qtd*i.valor*(i.mult||1),0);
+  abrirDrawer(o.id ? 'Orçamento' : 'Novo orçamento', `<div class="form">
+    <div class="fld"><label>Empresa <em>*</em></label><select class="sel" id="oc-emp" onchange="A.orcSet('empresa',this.value)">${opts(empsOrd().map(x=>[x.id,x.fan||x.raz]), o.empresa, 'Escolha')}</select></div>
+    <div class="fld"><label>Tabela <em>*</em></label><select class="sel" id="oc-tab" onchange="A.orcSet('tabela',this.value)">${opts(TABS_PRECO, o.tabela, 'Cheia ou parceria?')}</select>${o.empresa&&o.tabela&&!tb?`<div class="hint" style="color:var(--red)">Esta empresa não tem essa tabela. Importe em “Tabelas de preços”.</div>`:''}</div>
+    <div class="fld full"><label>Destinatário <em>*</em></label><input class="in" id="oc-dest" value="${esc(o.dest)}" onchange="ORC.dest=this.value" placeholder="Ex.: Secretaria Municipal de Saúde de Mamonas"></div>
+    <div class="fld"><label>Referência</label><input class="in" value="${esc(o.ref)}" onchange="ORC.ref=this.value" placeholder="Ex.: Cotação 187/2026"></div>
+    <div class="fld"><label>Validade da proposta</label><input class="in" value="${esc(o.validade)}" onchange="ORC.validade=this.value"></div>
+  </div>
+  ${tb ? `<div class="sect-t">Adicionar exames da tabela (${tb.itens.length} itens)</div><input class="in" id="oc-busca" style="width:100%" placeholder="Digite parte do nome ou código…" oninput="A.orcBusca(this.value)"><div id="oc-res" class="card" style="margin-top:6px;max-height:220px;overflow:auto"></div>` : ''}
+  <div class="sect-t">Itens do orçamento</div>
+  <div class="card"><div class="bd np tw"><table class="t"><thead><tr><th>Exame</th><th class="num">Qtd.</th><th class="num">Unitário</th><th class="num">×</th><th class="num">Subtotal</th><th></th></tr></thead><tbody>
+   ${o.itens.map((i,k) => `<tr><td><div class="b small">${esc(i.desc)}</div><div class="small faint">${esc(i.cod||'')}</div></td><td class="num"><input class="in" style="width:70px;padding:4px 6px;text-align:right" type="number" min="1" value="${i.qtd}" onchange="ORC.itens[${k}].qtd=Math.max(1,+this.value||1);A.orcRef()"></td><td class="num">${brl(i.valor)}</td><td class="num"><select class="sel" style="padding:4px" title="MMII = os dois membros (valor em dobro)" onchange="ORC.itens[${k}].mult=+this.value;A.orcRef()"><option value="1"${(i.mult||1)==1?' selected':''}>1</option><option value="2"${i.mult==2?' selected':''}>2 (bilateral/MMII)</option></select></td><td class="num b">${brl(i.qtd*i.valor*(i.mult||1))}</td><td><button class="btn sm ghost" onclick="ORC.itens.splice(${k},1);A.orcRef()">${ic('x',14)}</button></td></tr>`).join('') || `<tr><td colspan="6">${vazio('Nenhum exame adicionado')}</td></tr>`}
+   <tr style="background:#FAFBFD"><td colspan="4" class="b">Total</td><td class="num b">${brl(total)}</td><td></td></tr></tbody></table></div></div>
+  <div class="form" style="margin-top:14px"><div class="fld full"><label>Observações</label><textarea class="ta" style="min-height:60px" onchange="ORC.obs=this.value">${esc(o.obs)}</textarea></div>
+   <div class="fld full"><div class="sect-t" style="margin:4px 0 0">Signatário</div></div>
+   <div class="fld full"><select class="sel" onchange="A.orcSig(this.value)">${opts(signatariosDe(o.empresa).map((s,i)=>[i,s.nome+' · '+(s.cargo||'')]), '', '— escolher signatário cadastrado —')}</select></div>
+   ${['nome','cpf','rg','cargo'].map(k => `<div class="fld"><label>${{nome:'Nome completo',cpf:'CPF',rg:'RG',cargo:'Cargo / função'}[k]}${k!=='rg'?' <em>*</em>':''}</label><input class="in" id="oc-s${k}" value="${esc((o.sig||{})[k]||'')}" onchange="(ORC.sig||={}).${k}=this.value"></div>`).join('')}
+  </div>`,
+  `${o.id?`<button class="btn danger" onclick="A.fechar(true);A.excl('orcamentos','${o.id}')">${ic('trash',15)} Excluir</button>`:''}<div class="sp"></div><button class="btn" onclick="A.fechar(true)">Fechar</button><button class="btn" onclick="A.orcSalvar(false)">Salvar</button><button class="btn pri" onclick="A.orcSalvar(true)">${ic('down',15)} Salvar e gerar Word</button>`);
+  DR = {sujo:false};
+}
+A.orcRef = () => { const sy = $('.drawer .db')?.scrollTop; orcDrawer(); const d=$('.drawer .db'); if(d) d.scrollTop = sy||0; };
+A.orcSet = (k, v) => { if(k==='empresa' || k==='tabela'){ if(ORC.itens.length && ORC[k] && ORC[k]!==v){ ORC.itens = []; toast('Itens limpos: os preços dependem da empresa e da tabela'); } } ORC[k]=v; A.orcRef(); };
+A.orcSig = i => { if(i==='') return; const s = signatariosDe(ORC.empresa)[+i]; ORC.sig = Object.assign({}, s); A.orcRef(); };
+A.orcBusca = q => {
+  const tb = tabelaDe(ORC.empresa, ORC.tabela); const box = $('#oc-res'); if(!tb||!box) return;
+  const termos = norm(q).replace(/duplex scan/g,'doppler').split(/\s+/).filter(Boolean);
+  if(!termos.length){ box.innerHTML=''; return; }
+  const rs = tb.itens.map((it,k)=>[it,k]).filter(([it]) => { const t = norm(it.desc+' '+it.cod+' '+it.mnem+' '+it.setor).replace(/duplex scan/g,'doppler'); return termos.every(x => t.includes(x)); })
+    .sort((a,b) => (norm(b[0].desc).startsWith(termos[0])?1:0)-(norm(a[0].desc).startsWith(termos[0])?1:0) || a[0].desc.length-b[0].desc.length).slice(0,40);
+  box.innerHTML = rs.map(([it,k]) => `<div class="lnk-row" style="cursor:pointer" onclick="A.orcAdd(${k})"><div style="flex:1"><div class="small b">${esc(it.desc)}</div><div class="small faint">${esc(it.setor)} · ${esc(it.cod)}</div></div><b class="small">${brl(it.valor)}</b>${ic('plus',15)}</div>`).join('') || '<div class="lnk-row faint small">Nenhum exame encontrado. Itens sem correspondência na tabela não entram no orçamento.</div>';
+};
+A.orcAdd = k => { const it = tabelaDe(ORC.empresa, ORC.tabela).itens[k]; ORC.itens.push({desc:it.desc, cod:it.cod, setor:it.setor, valor:it.valor, qtd:1, mult:1}); A.orcRef(); setTimeout(()=>$('#oc-busca')?.focus(),50); };
+A.orcSalvar = async gerar => {
+  const o = ORC; o.dest = $('#oc-dest').value.trim();
+  ['nome','cpf','rg','cargo'].forEach(k => (o.sig ||= {})[k] = $('#oc-s'+k).value.trim());
+  if(!o.empresa || !o.tabela) return toast('Escolha a empresa e a tabela (cheia ou parceria)', true);
+  if(!o.dest) return toast('Informe o destinatário', true);
+  if(!o.itens.length) return toast('Adicione ao menos um exame', true);
+  const e = emp(o.empresa);
+  if(gerar){
+    const f = faltaDadosEmp(e); if(f.length) return toast('Complete os dados da empresa antes: '+f.join(', '), true);
+    if(!o.sig.nome || !o.sig.cpf || !o.sig.cargo) return toast('Preencha nome completo, CPF e cargo do signatário', true);
+  }
+  o.total = o.itens.reduce((s,i)=>s+i.qtd*i.valor*(i.mult||1),0);
+  const rec = await salvar('orcamentos', Object.assign({}, o, {id:o.id||undefined}), {titulo:`Orçamento ${e.fan||e.raz} → ${o.dest} (${brl(o.total)})`});
+  ORC.id = rec.id;
+  if(gerar){
+    const linhas = o.itens.map((i,k) => `<tr><td>${k+1}</td><td>${esc(i.cod||'')}</td><td>${esc(i.desc)}${i.mult==2?' (bilateral)':''}</td><td class="n">${i.qtd}</td><td class="n">${brl(i.valor*(i.mult||1))}</td><td class="n">${brl(i.qtd*i.valor*(i.mult||1))}</td></tr>`).join('');
+    const html = timbrado(e) + `<h1>PROPOSTA DE PREÇOS / ORÇAMENTO</h1><p style="text-align:left"><strong>Destinatário:</strong> ${esc(o.dest)}${o.ref?`<br><strong>Referência:</strong> ${esc(o.ref)}`:''}<br><strong>Data:</strong> ${fmtD(o.data)}</p>
+      <p>A empresa <strong>${esc(e.raz)}</strong>, CNPJ ${esc(cnpjDe(e))}, apresenta a seguinte proposta de preços para os serviços abaixo relacionados:</p>
+      <table class="d"><tr><th>#</th><th>Código</th><th>Procedimento</th><th>Qtd.</th><th>Valor unitário</th><th>Subtotal</th></tr>${linhas}<tr><td colspan="5"><b>VALOR TOTAL</b></td><td class="n"><b>${brl(o.total)}</b></td></tr></table>
+      <p><strong>Validade da proposta:</strong> ${esc(o.validade||'60 dias')}.</p>${o.obs?`<p><strong>Observações:</strong> ${esc(o.obs)}</p>`:''}
+      <p style="text-align:right;margin-top:30px">${esc(cidadeEmp2(e))}, ${dataExtenso()}.</p>` + blocoAssinatura(o.sig);
+    baixarDoc(html, `Orçamento - ${e.fan||e.raz} - ${o.dest}`);
+    registrar('gerou','orcamentos',rec.id,`Orçamento em Word · ${e.fan||e.raz} → ${o.dest}`);
+  }
+  toast(gerar ? 'Orçamento salvo e gerado em Word' : 'Orçamento salvo'); A.fechar(true);
+};
+
+// ---------- botões extras nas telas existentes ----------
+const _viewDocs = VIEWS.docs;
+VIEWS.docs = () => _viewDocs().replace(/(<button class="btn sm" onclick="A\.emitir\('([\w-]+)'\)">)/g, `<button class="btn sm" onclick="A.pacote('$2')">${ic('zip',14)} Pacote ZIP</button>$1`);
+
+A.excl = (c,id) => excluir(c,id);
 </script>
 </body></html>
