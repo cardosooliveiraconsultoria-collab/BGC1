@@ -178,6 +178,16 @@ table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
 .tile .tb{display:flex;gap:6px;flex-wrap:wrap;min-height:20px}
 .crumbs{font-size:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.crumbs span{color:var(--faint)}
 
+/* ---------- anexos de documentos ---------- */
+.anx-drop{display:flex;gap:12px;align-items:center;border:1.5px dashed #B8C6DE;border-radius:10px;padding:14px 16px;cursor:pointer;background:#FAFBFD;color:var(--navy3)}
+.anx-drop:hover,.anx-drop.on{border-color:var(--blue);background:var(--blue-soft)}
+.anx-drop b{color:var(--text)}
+.anx-ic{flex:none;width:34px;height:34px;border-radius:8px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-size:10px;font-weight:700;letter-spacing:.3px}
+.anx-viewer{position:fixed;inset:0;z-index:130;background:rgba(15,23,42,.6);display:grid;place-items:center;padding:20px}
+.anx-vbox{background:#fff;border-radius:12px;width:min(980px,100%);height:min(88vh,900px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.anx-vhd{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+@media(max-width:600px){.anx-vhd .btn span{display:none}.anx-viewer{padding:0}.anx-vbox{height:100vh;border-radius:0}}
+
 /* ---------- modal / drawer ---------- */
 #ov{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:flex;justify-content:flex-end}
 .drawer{background:#fff;width:min(640px,100%);height:100%;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.12);animation:sl .18s ease-out}
@@ -1289,7 +1299,7 @@ const FORM = {
   {k:'empresa',l:'Empresa',t:'emp',req:1},{k:'tipo',l:'Documento',t:'list',o:TIPOS_DOC,req:1},
   {k:'emissao',l:'Emissão',t:'date'},{k:'vencimento',l:'Validade',t:'date'},
   {k:'naovence',l:'Documento sem validade',t:'check'},{k:'etapa',l:'Etapa',t:'select',o:ETAPAS_DOC},
-  {k:'drv',l:'Arquivo (link do Drive)',t:'link',full:1,upload:1},
+  {k:'drv',l:'Arquivo principal (link do Drive)',t:'link',full:1,hint:'Preenchido sozinho com o primeiro arquivo anexado. Pode colar um link manualmente.'},
   {k:'resp',l:'Responsável',t:'user'},{k:'obs',l:'Observações',t:'textarea',full:1}],
  anexos:[
   {k:'data',l:'Data',t:'date',d:()=>hoje()},{k:'processo',l:'Processo / edital',t:'list',o:()=>ativos('proc').map(p=>contratante(p)+(p.num?' · '+p.num:'')),req:1},
@@ -1370,17 +1380,20 @@ function abrirDrawer(titulo, corpo, rodape, tabs){
 }
 A.fechar = async (forcar) => {
   if(!forcar && DR && DR.sujo && !await perguntar('Descartar alterações?','Você alterou campos que ainda não foram salvos.','Descartar')) return;
+  if(DR && DR.col==='docs' && DR.novo && !DR.salvo) descartarAnexosPendentes(DR.anexos);
   $('#ov').classList.add('hidden'); $('#ov').innerHTML=''; document.body.style.overflow=''; DR=null;
 };
 function abrirForm(col, rec, titulo){
   rec = rec || {}; const novo = !rec.id || !BY[col]?.[rec.id];
+  if(col==='docs' && !rec.id) rec = Object.assign({}, rec, {id: nid()});
   DR = {col, rec, novo, sujo:false, aba:'dados'};
+  if(col==='docs') DR.anexos = JSON.parse(JSON.stringify(rec.anexos || []));
   const extras = [];
   if(!novo) extras.push(['hist','Histórico']);
   if(!novo && col==='munis') extras.unshift(['ctt','Contatos']);
   if(!novo && col==='emps') extras.unshift(['edocs','Documentos']);
   const tabs = extras.length ? `<div class="tabs"><button class="on" data-a="dados" onclick="A.aba('dados')">Dados</button>${extras.map(([a,n])=>`<button data-a="${a}" onclick="A.aba('${a}')">${n}</button>`).join('')}</div>` : '';
-  const corpo = `<div class="form" id="fm">${FORM[col].map(f => campo(f, rec)).join('')}</div>
+  const corpo = `<div class="form" id="fm">${FORM[col].map(f => campo(f, rec)).join('')}</div>${col==='docs'?'<div id="anx-box"></div>':''}
     ${!novo && rec.criadoEm ? `<div class="small faint" style="margin-top:16px">Criado por ${esc(usuarioNome(rec.criadoPor))} em ${new Date(rec.criadoEm).toLocaleString('pt-BR')}${rec.atualizadoEm && rec.atualizadoEm!==rec.criadoEm ? ` · última alteração por ${esc(usuarioNome(rec.atualizadoPor))} em ${new Date(rec.atualizadoEm).toLocaleString('pt-BR')}`:''}</div>`:''}`;
   const podeExcluir = !novo && col!=='usuarios' && (G() || ['contatos','tarefas','anexos','agenda','viagens'].includes(col));
   const rod = `${podeExcluir?`<button class="btn danger" onclick="A.excluirAtual()">${ic('trash',15)} Excluir</button>`:''}${col==='munis'&&!novo?`<button class="btn" onclick="A.fechar(true);A.novo('contatos',{municipio:'${rec.id}'})">${ic('phone',15)} Registrar contato</button>`:''}<div class="sp"></div><button class="btn" onclick="A.fechar()">Cancelar</button><button class="btn pri" id="btn-salvar" onclick="A.salvarForm()">Salvar</button>`;
@@ -1388,6 +1401,7 @@ function abrirForm(col, rec, titulo){
   $('#fm').addEventListener('input', () => DR && (DR.sujo = true));
   $('#fm').addEventListener('change', () => DR && (DR.sujo = true));
   const first = $('#fm [data-k]'); if(first && innerWidth > 760) setTimeout(() => first.focus(), 60);
+  if(col==='docs') renderAnexos();
 }
 A.novo = (col, preset) => { fecharMenu(); abrirForm(col, Object.fromEntries(Object.entries(preset||{}).filter(([,v])=>v!==''&&v!=null))); };
 A.abrir = (col, id) => { const r = BY[col]?.[id]; if(r) abrirForm(col, r); else toast('Registro não encontrado', true); };
@@ -1432,6 +1446,7 @@ A.salvarForm = async () => {
     if(novo && BY.usuarios[dados.id] && !BY.usuarios[dados.id].excluido){ toast('Este e-mail já está na equipe', true); return; }
   } else dados.id = rec.id || undefined;
   if(col==='tarefas'){ const antes = BY.tarefas[rec.id]; if(dados.status==='Concluída' && (!antes || antes.status!=='Concluída')){ dados.concluidaEm = hoje(); dados.concluidaPor = ME.email; opt.acao='concluiu'; } if(dados.status!=='Concluída'){ dados.concluidaEm=''; } }
+  if(col==='docs'){ dados.anexos = DR.anexos || []; const prim = dados.anexos.find(a => !a.excluido); if(!dados.drv && prim){ dados.drv = prim.url; dados.fileId = prim.fileId; } }
   if(col==='docs'){ const antes = BY.docs[rec.id]; if(dados.naovence) dados.vencimento=''; if(antes && antes.drv && dados.drv && antes.drv!==dados.drv){ dados.historico = [...(antes.historico||[]), {drv:antes.drv, emissao:antes.emissao||'', vencimento:antes.vencimento||'', arquivadoEm:Date.now()}]; } }
   if(col==='munis' && rec.id) dados.id = rec.id;
   $('#btn-salvar').disabled = true;
@@ -1442,6 +1457,7 @@ A.salvarForm = async () => {
     try { const criado = await B.createUser(dados.email); toast(criado ? 'Conta criada. Enviamos um e-mail para a pessoa criar a própria senha.' : 'Este e-mail já tinha conta. Acesso liberado e link de nova senha enviado.'); }
     catch(e){ toast('Acesso liberado, mas o e-mail de senha falhou: '+(e.code||e.message), true); }
   } else toast(novo ? 'Registrado' : 'Alterações salvas');
+  if(DR) DR.salvo = true;
   A.fechar(true);
 };
 
@@ -1457,6 +1473,7 @@ function initDrive(){
   return true;
 }
 function garantirDrive(){
+  if(MOCK) return Promise.resolve('mock');
   return new Promise((res, rej) => {
     if(driveOk()) return res(driveTok);
     if(!initDrive()) return rej(new Error('Google Drive não configurado (Backup e dados).'));
@@ -1466,6 +1483,7 @@ function garantirDrive(){
 }
 A.driveConectar = () => garantirDrive().then(() => toast('Google Drive conectado')).catch(e => toast(e.message, true));
 async function dreq(method, path, body, qs){
+  if(MOCK) return {id:'mock-'+nid(), files:[]};
   const t = await garantirDrive();
   const r = await fetch(`https://www.googleapis.com/drive/v3/${path}${qs?'?'+qs:''}`, {method, headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined});
   if(r.status===401){ driveTok=null; throw new Error('Sessão do Drive expirou, tente de novo.'); }
@@ -1479,6 +1497,7 @@ async function pasta(nome, pai){
   return (await dreq('POST','files',{name:nome, mimeType:'application/vnd.google-apps.folder', parents:[pai]})).id;
 }
 async function enviarArquivo(blob, nome, pai, mime){
+  if(MOCK){ const id='mock'+nid(); return {id, webViewLink:`https://drive.google.com/file/d/${id}/view`}; }
   const t = await garantirDrive();
   const fd = new FormData();
   fd.append('metadata', new Blob([JSON.stringify({name:nome, parents:[pai]})], {type:'application/json'}));
@@ -1754,7 +1773,7 @@ A.pacote = empId => {
   abrirDrawer(`Pacote de documentos · ${e.fan||e.raz}`, `<div class="banner info">Marque os documentos do processo. O sistema baixa os arquivos do Drive e monta um ZIP com tudo, mais um checklist em Word. Documentos vencidos aparecem em vermelho.</div>
     <div class="form" style="margin-bottom:14px"><div class="fld full"><label>Contratante / processo <em>*</em></label><input class="in" id="pk-ref" placeholder="Ex.: Prefeitura de Mamonas — Credenciamento 05/2026"></div></div>
     <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn sm" onclick="document.querySelectorAll('.pk-c').forEach(c=>c.checked=!!c.dataset.ok)">Marcar os que têm arquivo e estão válidos</button><button class="btn sm" onclick="document.querySelectorAll('.pk-c').forEach(c=>c.checked=false)">Desmarcar todos</button></div>
-    <div class="card"><div class="bd np">${ds.map(d => { const s = statusDoc(d); const tem = !!driveIdDe(d)||!!d.drv; return `<label class="chk" style="cursor:pointer"><input type="checkbox" class="pk-c" value="${d.id}" ${tem&&s.k!=='venc'?'data-ok="1"':''} style="width:18px;height:18px"><span class="txt" style="flex:1"><b>${esc(d.tipo)}</b><span class="small muted"> · ${d.naovence?'não vence':d.vencimento?'validade '+fmtD(d.vencimento):'sem data'}${tem?'':' · sem arquivo'}</span></span>${tag(s.t,s.c)}</label>`; }).join('') || vazio('Nenhum documento cadastrado')}</div></div>
+    <div class="card"><div class="bd np">${ds.map(d => { const s = statusDoc(d); const nA = anexosAtivos(d).length; const tem = !!driveIdDe(d)||!!d.drv||nA>0; return `<label class="chk" style="cursor:pointer"><input type="checkbox" class="pk-c" value="${d.id}" ${tem&&s.k!=='venc'?'data-ok="1"':''} style="width:18px;height:18px"><span class="txt" style="flex:1"><b>${esc(d.tipo)}</b><span class="small muted"> · ${d.naovence?'não vence':d.vencimento?'validade '+fmtD(d.vencimento):'sem data'}${tem?'':' · sem arquivo'}${nA?` · ${nA} anexo${nA>1?'s':''}`:''}</span></span>${tag(s.t,s.c)}</label>`; }).join('') || vazio('Nenhum documento cadastrado')}</div></div>
     <div id="pk-st" class="small muted" style="margin-top:12px"></div>`,
    `<div class="sp"></div><button class="btn" onclick="A.fechar(true)">Cancelar</button><button class="btn pri" id="pk-btn" onclick="A.gerarPacote('${empId}')">${ic('zip',15)} Gerar pacote ZIP</button>`);
   DR = {sujo:false};
@@ -2263,5 +2282,213 @@ renderSide = function(){
 try { const v = JSON.parse(localStorage.getItem('bgc2_visual')||'{}'); if(v.logo) document.querySelectorAll('#login .logo').forEach(l => l.outerHTML = `<img src="${v.logo}" style="width:40px;height:40px;object-fit:contain;border-radius:9px;background:#fff">`); } catch {}
 // dados da BGC usados no timbrado e na assinatura dos relatórios gerais
 Object.defineProperty(window, '__bgc', {get: () => Object.assign({}, BGC_EMP, cfg().bgc || {})});
+// ════════════════════════════════════════════════════════════
+// ANEXOS DOS DOCUMENTOS DAS EMPRESAS
+// Armazenamento: Google Drive (Empresas/<empresa>/<tipo de documento>/), envio multipart.
+// Metadados: lista "anexos" dentro do próprio registro do documento no Firestore:
+//   {id, nome, tipo (MIME), tamanho (bytes), fileId, url, enviadoEm, enviadoPor, excluido?, excluidoEm?, excluidoPor?}
+// ════════════════════════════════════════════════════════════
+const ANEXO_TIPOS = {'application/pdf':'pdf', 'image/png':'png', 'image/jpeg':'jpg'};
+const ANEXO_EXT = ['pdf','png','jpg','jpeg'];
+const ANEXO_MAX_MB = 10;
+Object.assign(ACAONOME, {anexou:'anexou arquivo em', removeuAnexo:'removeu arquivo de'});
+const tamanhoTxt = b => b >= 1048576 ? (b/1048576).toFixed(1).replace('.',',')+' MB' : Math.max(1, Math.round(b/1024))+' KB';
+const anexosAtivos = d => (d.anexos||[]).filter(a => !a.excluido);
+const icAnexo = t => t==='application/pdf' ? 'PDF' : String(t).startsWith('image/') ? 'IMG' : 'ARQ';
+
+function validarAnexo(f){
+  const ext = String(f.name).split('.').pop().toLowerCase();
+  if(!ANEXO_TIPOS[f.type] || !ANEXO_EXT.includes(ext)) return `${f.name}: formato não aceito (use PDF, PNG ou JPEG)`;
+  if(f.size > ANEXO_MAX_MB*1048576) return `${f.name}: ${tamanhoTxt(f.size)} — o limite é ${ANEXO_MAX_MB} MB por arquivo`;
+  if(!f.size) return `${f.name}: arquivo vazio`;
+  return '';
+}
+const podeRemoverAnexo = a => G() || a.enviadoPor === ME.email;
+
+function renderAnexos(msg){
+  const box = $('#anx-box'); if(!box || !DR) return;
+  const lista = DR.anexos.map((a,i) => [a,i]).filter(([a]) => !a.excluido);
+  const princ = ($('#fm-drv')?.value || DR.rec.drv || '').trim();
+  const legado = princ && !lista.some(([a]) => a.url===princ) ? princ : '';
+  box.innerHTML = `<div class="sect-t" style="margin-top:22px">Arquivos anexados ${lista.length?`<span class="tag" style="margin-left:6px">${lista.length}</span>`:''}</div>
+    <label class="anx-drop" id="anx-drop">
+      <input type="file" id="anx-in" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" class="hidden" onchange="A.anexar(this.files);this.value=''">
+      ${ic('up',20)}<div><b>Escolher arquivos</b> ou arrastar para cá<div class="small faint">PDF, PNG ou JPEG · até ${ANEXO_MAX_MB} MB cada · vários de uma vez</div></div>
+    </label>
+    <div id="anx-st" class="small" style="margin:8px 0">${msg||''}</div>
+    <div class="card"><div class="bd np">
+      ${legado ? `<div class="lnk-row"><span class="anx-ic">DRV</span><div style="flex:1;min-width:0"><div class="b small">Arquivo principal</div><div class="small faint">link cadastrado anteriormente</div></div>${tag('Principal','blue')}<button class="btn sm" onclick="A.anexoVer(-1)">Visualizar</button></div>` : ''}
+      ${lista.map(([a,i]) => `<div class="lnk-row"><span class="anx-ic">${icAnexo(a.tipo)}</span>
+        <div style="flex:1;min-width:0"><div class="b small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(a.nome)}">${esc(a.nome)}</div>
+        <div class="small faint">${tamanhoTxt(a.tamanho||0)} · ${new Date(a.enviadoEm).toLocaleString('pt-BR')} · ${esc(usuarioNome(a.enviadoPor))}</div></div>
+        ${a.url===princ ? tag('Principal','blue') : `<button class="btn sm ghost" title="Usar como arquivo principal" onclick="A.anexoPrincipal(${i})">Tornar principal</button>`}
+        <button class="btn sm" onclick="A.anexoVer(${i})">Visualizar</button>
+        ${podeRemoverAnexo(a) ? `<button class="btn sm ghost" title="Excluir" style="color:var(--red)" onclick="A.anexoExcluir(${i})">${ic('trash',14)}</button>` : ''}</div>`).join('')}
+      ${!lista.length && !legado ? vazio('Nenhum arquivo anexado') : ''}
+    </div></div>
+    ${DR.novo ? '<div class="small faint" style="margin-top:8px">Os arquivos são enviados ao Drive na hora e ficam ligados a este documento quando você clicar em Salvar.</div>' : ''}`;
+  const dz = $('#anx-drop');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('on'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('on'); }));
+  dz.addEventListener('drop', e => { if(e.dataTransfer?.files?.length) A.anexar(e.dataTransfer.files); });
+}
+
+// grava a lista de anexos no documento (somente quando o documento já existe no banco)
+async function gravarAnexos(acao, titulo){
+  if(!DR || DR.novo) return;
+  const id = DR.rec.id; const atual = BY.docs[id] || {};
+  const extra = {};
+  const prim = DR.anexos.find(a => !a.excluido);
+  if(!atual.drv && prim){ extra.drv = prim.url; extra.fileId = prim.fileId; if($('#fm-drv') && !$('#fm-drv').value) $('#fm-drv').value = prim.url; }
+  await salvar('docs', Object.assign({id, anexos:DR.anexos}, extra), {acao, titulo});
+}
+
+A.anexar = async files => {
+  if(!DR || DR.col!=='docs') return;
+  files = [...files];
+  const empId = $('#fm-empresa')?.value, tipo = $('#fm-tipo')?.value.trim();
+  if(!empId || !tipo) return renderAnexos(`<span style="color:var(--red)">Escolha a empresa e o tipo de documento antes de anexar.</span>`);
+  if(!MOCK && !cfg().folderId) return renderAnexos(`<span style="color:var(--red)">Pasta do Drive não configurada (Configurações → Google Drive).</span>`);
+  const erros = files.map(validarAnexo).filter(Boolean);
+  const ok = files.filter(f => !validarAnexo(f));
+  if(!ok.length) return renderAnexos(`<span style="color:var(--red)">${erros.map(esc).join('<br>')}</span>`);
+  const st = () => $('#anx-st');
+  try {
+    st().textContent = 'Conectando ao Drive…';
+    await garantirDrive();
+    const pE = await pasta('Empresas', cfg().folderId), pX = await pasta(empNome(empId), pE), pT = await pasta(tipo, pX);
+    const enviados = [];
+    for(const [k,f] of ok.entries()){
+      st().textContent = `Enviando ${k+1} de ${ok.length}: ${f.name}…`;
+      const nome = `${tipo} — ${empNome(empId)} — ${fmtD(hoje()).replace(/\//g,'-')} — ${f.name}`;
+      const r = await enviarArquivo(f, nome, pT, f.type);
+      if(!MOCK) for(const u of equipe()) if(u.id!==ME.email) try { await dreq('POST',`files/${r.id}/permissions`,{role:'reader',type:'user',emailAddress:u.id},'sendNotificationEmail=false'); } catch {}
+      const a = {id:nid(), nome:f.name, tipo:f.type, tamanho:f.size, fileId:r.id, url:r.webViewLink, enviadoEm:Date.now(), enviadoPor:ME.email};
+      DR.anexos.push(a); enviados.push(a);
+    }
+    if(DR.novo) DR.sujo = true;
+    if(!$('#fm-emissao').value) $('#fm-emissao').value = hoje();
+    await gravarAnexos('anexou', `${tipo} · ${empNome(empId)}: ${enviados.map(a=>a.nome).join(', ')}`);
+    renderAnexos(`<span style="color:var(--green)">${enviados.length} arquivo(s) anexado(s)${DR.novo?' — clique em Salvar para concluir':''}.</span>${erros.length?`<br><span style="color:var(--red)">${erros.map(esc).join('<br>')}</span>`:''}`);
+  } catch(x){ renderAnexos(`<span style="color:var(--red)">Não foi possível enviar: ${esc(x.message)}</span>`); }
+};
+
+A.anexoExcluir = async i => {
+  const a = DR?.anexos[i]; if(!a || !podeRemoverAnexo(a)) return;
+  if(!await perguntar(`Excluir “${a.nome}”?`, 'O arquivo vai para a lixeira do Google Drive (pode ser recuperado por 30 dias) e o registro do envio fica guardado no histórico do documento.', 'Excluir')) return;
+  Object.assign(a, {excluido:true, excluidoEm:Date.now(), excluidoPor:ME.email});
+  try { if(a.fileId && !MOCK) await dreq('PATCH', `files/${a.fileId}`, {trashed:true}); } catch(x){ console.warn('lixeira drive', x); }
+  const drv = $('#fm-drv');
+  if(drv && drv.value===a.url){ const prox = DR.anexos.find(x => !x.excluido); drv.value = prox ? prox.url : ''; }
+  if(!DR.novo){
+    const extra = drv ? {drv: drv.value, fileId: (DR.anexos.find(x => !x.excluido && x.url===drv.value)||{}).fileId || ''} : {};
+    await salvar('docs', Object.assign({id:DR.rec.id, anexos:DR.anexos}, extra), {acao:'removeuAnexo', titulo:`${$('#fm-tipo')?.value||''} · ${empNome($('#fm-empresa')?.value)}: ${a.nome}`});
+  }
+  renderAnexos('Arquivo excluído.');
+};
+
+A.anexoPrincipal = i => {
+  const a = DR?.anexos[i]; if(!a) return;
+  const drv = $('#fm-drv'); if(drv){ drv.value = a.url; DR.sujo = true; }
+  renderAnexos('Arquivo principal alterado — clique em Salvar para gravar.');
+};
+
+A.anexoVer = i => {
+  const a = i < 0 ? {nome:'Arquivo principal', url:($('#fm-drv')?.value||DR.rec.drv||''), fileId:DR.rec.fileId||driveIdDe(DR.rec)} : DR?.anexos[i];
+  if(!a || !a.url) return;
+  const fid = a.fileId || driveIdDe({drv:a.url});
+  const d = document.createElement('div'); d.className = 'anx-viewer';
+  d.innerHTML = `<div class="anx-vbox"><div class="anx-vhd"><b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.nome)}</b>
+     <a class="btn sm" href="${esc(a.url)}" target="_blank" rel="noopener">${ic('ext',14)} Abrir no Drive</a>${fid?`<a class="btn sm" href="https://drive.google.com/uc?export=download&id=${esc(fid)}" target="_blank" rel="noopener">${ic('down',14)} Baixar</a>`:''}
+     <button class="btn sm ghost" data-x="1">${ic('x',16)}</button></div>
+     ${fid ? `<iframe src="https://drive.google.com/file/d/${esc(fid)}/preview" allow="autoplay" style="flex:1;border:0;width:100%;background:#f3f5f9"></iframe>` : `<div class="empty" style="flex:1"><b>Pré-visualização indisponível</b>Use “Abrir no Drive”.</div>`}</div>`;
+  d.addEventListener('click', e => { if(e.target===d || e.target.closest('[data-x]')) d.remove(); });
+  document.body.appendChild(d);
+};
+
+function descartarAnexosPendentes(lista){
+  (lista||[]).filter(a => a.fileId && !a.excluido && !MOCK).forEach(a => dreq('PATCH', `files/${a.fileId}`, {trashed:true}).catch(()=>{}));
+}
+
+// ---------- contagem de arquivos nas listas de documentos ----------
+function celArquivo(d){
+  const n = anexosAtivos(d).length; const princ = d.drv;
+  if(!n && !princ) return '<span class="faint small">sem arquivo</span>';
+  return `${princ?`<a href="${esc(princ)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ic('ext',14)} Abrir</a>`:''}${n?` <span class="tag" title="arquivos anexados">${n} anexo${n>1?'s':''}</span>`:''}`;
+}
+// troca a coluna "Arquivo" pela versão com contagem de anexos (mesmas colunas de antes)
+tabDocs = function(rows){
+  const ord = {venc:0,logo:1,sd:2,ok:3,nv:4};
+  rows = rows.slice().sort((a,b) => (ord[statusDoc(a).k]-ord[statusDoc(b).k]) || (a.tipo||'').localeCompare(b.tipo||''));
+  return tabela([
+    {h:'Documento', v:d => `<span class="b">${esc(d.tipo||'')}</span>`},
+    {h:'Emissão', v:d => fmtD(d.emissao)},
+    {h:'Validade', v:d => d.naovence?'—':fmtD(d.vencimento)},
+    {h:'Situação', v:d => tag(statusDoc(d).t, statusDoc(d).c)},
+    {h:'Etapa', v:d => d.etapa?`<span class="small">${esc(d.etapa)}</span>`:''},
+    {h:'Arquivo', v:celArquivo},
+  ], rows, d => `A.abrir('docs','${d.id}')`);
+};
+tabDocsCom = function(rows){
+  const ord = {venc:0,logo:1,sd:2,ok:3,nv:4};
+  rows = rows.slice().sort((a,b) => (ord[statusDoc(a).k]-ord[statusDoc(b).k]) || (a.vencimento||'').localeCompare(b.vencimento||''));
+  return tabela([
+    {h:'Empresa', v:d => `<span class="b">${esc(empNome(d.empresa)||'—')}</span>${d.municipio?`<div class="small faint">${esc(muniNome(d.municipio))}</div>`:''}`},
+    {h:'Documento', v:d => esc(d.tipo||'')},
+    {h:'Validade', v:d => d.naovence?'—':fmtD(d.vencimento)},
+    {h:'Situação', v:d => tag(statusDoc(d).t, statusDoc(d).c)},
+    {h:'Arquivo', v:celArquivo},
+  ], rows, d => `A.abrir('docs','${d.id}')`);
+};
+
+// ---------- pacote ZIP passa a incluir todos os anexos de cada documento ----------
+const arquivosDoDoc = d => {
+  const l = []; const vistos = new Set();
+  const add = (fid, nome) => { if(fid && !vistos.has(fid)){ vistos.add(fid); l.push({fid, nome}); } };
+  add(driveIdDe(d), '');
+  anexosAtivos(d).forEach(a => add(a.fileId, a.nome));
+  return l;
+};
+A.gerarPacote = async empId => {
+  const e = emp(empId); const ref = $('#pk-ref').value.trim();
+  const ids = [...document.querySelectorAll('.pk-c:checked')].map(c => c.value);
+  if(!ref) return toast('Informe o contratante / processo', true);
+  if(!ids.length) return toast('Marque ao menos um documento', true);
+  const st = $('#pk-st'), bt = $('#pk-btn'); bt.disabled = true;
+  try {
+    st.textContent = 'Preparando…'; await lib('jszip');
+    const zip = new JSZip(); const linhas = []; let ok = 0, total = 0; const usados = {};
+    if(ids.some(id => arquivosDoDoc(BY.docs[id]).length)) await garantirDrive();
+    for(const [i,id] of ids.entries()){
+      const d = BY.docs[id]; const s = statusDoc(d); const arqs = arquivosDoDoc(d); const sit = [];
+      if(!arqs.length) sit.push('sem arquivo no sistema');
+      for(const [j,a] of arqs.entries()){
+        total++; st.textContent = `Baixando ${d.tipo} (${j+1}/${arqs.length})…`;
+        try {
+          const meta = await (await fetch(`https://www.googleapis.com/drive/v3/files/${a.fid}?fields=name,mimeType`, {headers:{Authorization:'Bearer '+driveTok}})).json();
+          if(meta.error) throw new Error(meta.error.message);
+          if(String(meta.mimeType).startsWith('application/vnd.google-apps')) throw new Error('arquivo do Google (Docs/Planilhas), baixe pelo link');
+          const r = await fetch(`https://www.googleapis.com/drive/v3/files/${a.fid}?alt=media`, {headers:{Authorization:'Bearer '+driveTok}});
+          if(!r.ok) throw new Error('Drive '+r.status);
+          const ext = (meta.name||a.nome||'').includes('.') ? (meta.name||a.nome).split('.').pop() : 'pdf';
+          let nome = `${String(i+1).padStart(2,'0')}${arqs.length>1?'.'+(j+1):''} - ${d.tipo}.${ext}`.replace(/[\\/:*?"<>|]+/g,'-');
+          if(usados[nome]) nome = nome.replace('.'+ext, ` (${i+1}-${j+1}).${ext}`); usados[nome]=1;
+          zip.file(nome, await r.blob()); ok++; sit.push(`${nome}: incluído`);
+        } catch(x){ sit.push(`${a.nome||'arquivo'}: não baixado (${x.message})`); }
+      }
+      linhas.push(`<tr><td>${i+1}</td><td>${esc(d.tipo)}</td><td>${d.naovence?'Não vence':fmtD(d.vencimento)||'Sem data'}</td><td>${esc(s.t)}</td><td>${sit.map(esc).join('<br>')}${d.drv?` · <a href="${esc(d.drv)}">link</a>`:''}</td></tr>`);
+    }
+    const venc = ids.filter(id => statusDoc(BY.docs[id]).k==='venc').length;
+    const chk = timbrado(faltaDadosEmp(e).length ? Object.assign({}, e, {raz:e.raz||e.fan}) : e) + `<h1>CHECKLIST DE DOCUMENTOS</h1><p style="text-align:left"><strong>Empresa:</strong> ${esc(e.raz||e.fan)}<br><strong>Contratante / processo:</strong> ${esc(ref)}<br><strong>Data:</strong> ${fmtD(hoje())}</p>`
+      + (venc ? `<p style="color:#A32D2D"><strong>Atenção:</strong> ${venc} documento(s) vencido(s) no pacote.</p>` : '')
+      + `<table class="d"><tr><th>#</th><th>Documento</th><th>Validade</th><th>Situação</th><th>Arquivos</th></tr>${linhas.join('')}</table>`;
+    zip.file('00 - CHECKLIST.doc', '﻿<html><head><meta charset="UTF-8"><style>'+CSS_WORD+'</style></head><body>'+chk+'</body></html>');
+    st.textContent = 'Compactando…';
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Pacote - ${e.fan||e.raz} - ${ref}.zip`.replace(/[\\/:*?"<>|]+/g,'-'); document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(), 1000);
+    registrar('gerou', 'pacotes', '', `Pacote de documentos · ${e.fan||e.raz} · ${ref} (${ok} de ${total} arquivos)`);
+    toast(`Pacote gerado: ${ok} de ${total} arquivo(s) dentro do ZIP`); A.fechar(true);
+  } catch(x){ st.textContent=''; toast('Não foi possível gerar: '+x.message, true); bt.disabled=false; }
+};
 </script>
 </body></html>
