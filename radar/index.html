@@ -173,6 +173,34 @@ table.ed th { background: var(--surface-2); color: var(--ink-3); font-size: 11px
 .kc b { display: block; font-size: 13px; }
 .kc .o { color: var(--ink-2); margin: 4px 0 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .kc .r { display: flex; justify-content: space-between; align-items: center; gap: 6px; color: var(--ink-3); }
+/* agencia de cargas */
+.ag-dest { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.ag-dest a { display: block; border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; background: var(--surface); color: var(--ink); }
+.ag-dest a:hover { border-color: var(--slate); }
+.ag-dest a b { display: block; font-size: 13.5px; }
+.ag-dest a span { font-size: 12px; color: var(--ink-3); }
+.ag-cids { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; }
+.ag-cid { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-2); font-size: 13px; }
+.ag-cid .lk { display: flex; gap: 6px; }
+.ag-cid .lk a { font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.ag-cid .lk a:hover { border-color: var(--slate); }
+.dicas { margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+.dicas li { margin-bottom: 6px; }
+.fm { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; }
+.fm label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.fm input, .fm select, .fm textarea { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 400; min-width: 0; }
+.fm .larga { grid-column: 1 / -1; }
+.fm .bts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fm .dica { font-size: 12px; color: var(--ink-3); font-weight: 500; text-transform: none; letter-spacing: 0; }
+.rolagem { overflow-x: auto; }
+table.ed td .sm { color: var(--ink-3); font-size: 12px; }
+table.ed td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.btn.peq { padding: 4px 9px; font-size: 12px; }
+.disp { font-size: 11.5px; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
+.disp.sim { background: var(--novo-bg); color: var(--novo); } .disp.nao { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); }
+.cab-bloco { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 22px 0 10px; }
+.cab-bloco h3 { margin: 0; font-size: 15px; font-weight: 650; }
+.cab-bloco small { color: var(--ink-3); font-weight: 500; font-size: 12.5px; }
 .menu-mob { display: none; }
 @media (max-width: 1100px) { .grade2 { grid-template-columns: 1fr; } .kanban { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) {
@@ -230,6 +258,8 @@ const ICON = {
   extra: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   mei: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5M16 3.5l1.5 1.5 3-3"/>',
   cultura: '<path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>',
+  agencia: '<path d="M2 6h11v10H2zM13 9h4l4 4v3h-8zM6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>',
+  frete: '<path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h3M9 17h8M15 11l2 2-2 2"/>',
   acomp: '<path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z"/>',
   editais: '<path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h8"/>'
 };
@@ -243,6 +273,8 @@ const PAGINAS = [
   { id: 'extra', nome: 'Oportunidades extras', grupo: 'Oportunidades', cat: 'extra' },
   { id: 'mei', nome: 'MEI – Janaúba e Montes Claros', grupo: 'Oportunidades', cat: 'mei' },
   { id: 'cultura', nome: 'Cultura MG', grupo: 'Oportunidades', cat: 'cultura' },
+  { id: 'agencia', nome: 'Cargas – Janaúba e Região', grupo: 'Agência de Cargas' },
+  { id: 'frete', nome: 'Licitações de frete', grupo: 'Agência de Cargas', cat: 'frete' },
   { id: 'acomp', nome: 'Acompanhamento', grupo: 'Gestão' },
   { id: 'editais', nome: 'Editais baixados', grupo: 'Gestão' }
 ];
@@ -255,6 +287,7 @@ const SUB = {
   obra_edificacao: 'Edificações (construção, reforma, ampliação)', obra_pavimentacao: 'Pavimentação, estradas e drenagem', obra_saneamento: 'Saneamento e água',
   obra_manutencao: 'Manutenção predial / serviços de engenharia', obra_materiais: 'Materiais de construção', obra_outros: 'Outras obras',
   graf_crachas: 'Crachás de identificação (feiras, congressos, eventos)', graf_impressos: 'Serviços gráficos e impressos', graf_visual: 'Comunicação visual (banners, faixas, placas)', graf_papelaria: 'Papelaria e material de expediente', graf_escolar: 'Material escolar',
+  frete_transporte: 'Transporte de cargas, fretes e mudanças', frete_caminhao: 'Locação / credenciamento de caminhões (inclusive pipa)',
   mei_exclusiva: 'Exclusiva ME/EPP (MEI pode participar)', mei_cota: 'Cota reservada ME/EPP', mei_dispensa: 'Dispensa – pequeno valor', mei_cita: 'Cita MEI / microempreendedor'
 };
 // aba MEI: o item continua na aba de origem; esta aba mostra os marcados com mei = 'sim' (regiões de Janaúba e Montes Claros)
@@ -269,6 +302,22 @@ function nomeConsorcio(o) {
 const REL = { alta: ['Relevância alta', 'alta'], verificar: ['Verificar', 'verif'], consorcio: ['Consórcio', 'verif'] };
 const NOME_REG = { 'Fora da area': 'Fora da área', 'Demais municipios MG': 'Demais municípios – MG', 'Demais municipios BA': 'Demais municípios – BA' };
 const ETAPAS = [['', 'Acompanhar…'], ['avaliacao', 'Em avaliação'], ['participar', 'Vamos participar'], ['enviado', 'Proposta enviada'], ['descartado', 'Descartado']];
+// agencia de cargas: o painel so leva ate a busca do FreteBras (nao copia anuncios: os termos do FreteBras proibem robos,
+// copia e armazenamento de anuncios). Motoristas e negociacoes sao dados da propria agencia, guardados no servidor local (agencia.json).
+const FB = 'https://www.fretebras.com.br/fretes/';
+const RAIO = { 50: '/raio-cinquenta-km', 100: '/raio-cem-km', 200: '/raio-duzentos-km' };
+const fbSlug = (cid, uf) => norm(cid).replace(/\s+/g, '-') + '-' + uf.toLowerCase();
+const fbLink = (dir, cid, uf, raio) => FB + (dir === 'para' ? 'carga-para-' : 'carga-de-') + fbSlug(cid, uf) + (RAIO[raio] || '');
+const AG_CIDADES = [['Janaúba', 'MG'], ['Nova Porteirinha', 'MG'], ['Jaíba', 'MG'], ['Porteirinha', 'MG'], ['Mato Verde', 'MG'], ['Monte Azul', 'MG'], ['Espinosa', 'MG'], ['Montes Claros', 'MG'], ['Francisco Sá', 'MG'], ['Bocaiúva', 'MG'], ['Januária', 'MG'], ['Manga', 'MG'], ['Salinas', 'MG'], ['Taiobeiras', 'MG'], ['Pirapora', 'MG'], ['São Francisco', 'MG'], ['Guanambi', 'BA']];
+const VEICULOS = ['VUC / 3/4', 'Toco', 'Truck', 'Bitruck', 'Carreta', 'Carreta LS', 'Vanderléia', 'Bitrem', 'Rodotrem'];
+const CARROCERIAS = ['Baú', 'Sider', 'Graneleiro', 'Grade baixa', 'Caçamba', 'Refrigerado', 'Prancha', 'Tanque', 'Cegonha', 'Outra'];
+const ST_NEG = [['prospeccao', 'Prospecção'], ['negociando', 'Negociando'], ['fechado', 'Fechado'], ['entregue', 'Entregue'], ['perdido', 'Perdido']];
+const brl = v => (+v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const num = v => { const n = parseFloat(String(v ?? '').replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// data de hoje no relogio deste computador (HOJE e a data da ultima busca; toISOString seria UTC e viraria o dia as 21h)
+const agora = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19); };
+const zap = t => { const d = String(t || '').replace(/\D/g, ''); return d.length >= 10 ? 'https://wa.me/' + (d.length <= 11 ? '55' + d : d) : ''; };
 // O painel abre direto do arquivo (sempre funciona). Baixar edital, acompanhar e buscar agora usam o servidor local,
 // que o atalho liga em segundo plano; a página detecta sozinha quando ele está no ar.
 // Dentro do sistema BGC (GitHub Pages) o painel tambem procura o servidor local deste computador.
@@ -300,7 +349,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const nomeReg = r => NOME_REG[r] || r;
 
-let fila = {}, marc = {};
+let fila = {}, marc = {}, AG = { motoristas: [], negocios: [] }, agCarregado = false, agEdit = null;
 let E = { pag: 'geral', regiao: null, cidade: null, orgao: null, busca: '', tipo: '', periodo: 'todos', ordem: 'pub', encerrados: false, abertas: new Set(), limite: 50 };
 try { const s = JSON.parse(localStorage.getItem('bgcRadar') || '{}'); if (s.pag && PAGINAS.some(p => p.id === s.pag)) E.pag = s.pag; if (s.ordem) E.ordem = s.ordem; } catch (e) {}
 const pagAtual = () => PAGINAS.find(p => p.id === E.pag);
@@ -330,6 +379,7 @@ function renderNav() {
     if (p.cat) { const a = daCat(p.cat); const n = a.filter(ehNovo).length; qt = `<span class="qt">${n ? `<b>+${n}</b>` : ''}${a.length}</span>`; }
     if (p.id === 'acomp') qt = `<span class="qt">${Object.values(marc).filter(m => m && m.etapa && m.etapa !== 'descartado').length || ''}</span>`;
     if (p.id === 'editais') qt = `<span class="qt">${Object.keys(fila).length || ''}</span>`;
+    if (p.id === 'agencia') qt = `<span class="qt">${AG.negocios.filter(n => ['prospeccao', 'negociando'].includes(n.status)).length || ''}</span>`;
     h += `<button data-pag="${p.id}" class="${E.pag === p.id ? 'ativa' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">${ICON[p.id]}</svg>${p.nome}${qt}</button>`;
   });
   $('#nav').innerHTML = h;
@@ -349,6 +399,8 @@ function renderTopo() {
     extra: 'Outros credenciamentos, pregões, dispensas e concorrências nas cidades de atuação',
     mei: 'Editais que um MEI pode disputar nas regiões de Janaúba e Montes Claros — itens exclusivos ou com cota para ME/EPP, dispensas de pequeno valor e avisos que citam MEI (todos os segmentos)',
     cultura: 'Editais culturais em Minas Gerais — federais, estaduais (SECULT, PNAB) e municipais',
+    agencia: 'Agência de cargas: atalhos para as cargas do FreteBras saindo e chegando em Janaúba e região, carteira de motoristas parceiros e controle das negociações e comissões',
+    frete: 'Prefeituras, consórcios e órgãos das cidades de atuação contratando transporte de cargas, fretes, mudanças e caminhões (inclusive caminhão-pipa)',
     acomp: 'Processos que a equipe está acompanhando, por etapa',
     editais: 'Editais baixados pelo painel'
   };
@@ -366,6 +418,15 @@ function renderKpis() {
   if (p.id === 'editais') {
     const v = Object.values(fila);
     $('#kpis').innerHTML = kpi('Editais baixados', v.length, 'pelo painel') + kpi('Analisados antes', v.filter(f => f.status === 'analisado').length, 'relatório na pasta', 'novo');
+    return;
+  }
+  if (p.id === 'agencia') {
+    const mes = agora().slice(0, 7);
+    const doMes = AG.negocios.filter(n => ['fechado', 'entregue'].includes(n.status) && String(n.data || '').slice(0, 7) === mes);
+    $('#kpis').innerHTML = kpi('Em negociação', AG.negocios.filter(n => ['prospeccao', 'negociando'].includes(n.status)).length, 'prospecção e negociando', 'rec') +
+      kpi('Fechadas no mês', doMes.length, 'fechadas ou entregues', 'novo') +
+      kpi('Comissão do mês', brl(doMes.reduce((s, n) => s + num(n.taxa), 0)), 'soma das taxas de agenciamento', 'novo') +
+      kpi('Motoristas parceiros', AG.motoristas.length, `${AG.motoristas.filter(m => m.disponivel !== 'nao').length} disponíveis`);
     return;
   }
   if (p.id === 'acomp') {
@@ -402,7 +463,7 @@ function renderGeral() {
   const cats = PAGINAS.filter(p => p.cat).map(p => { const a = daCat(p.cat); return `<tr data-ir="${p.id}"><td>${p.nome}</td><td class="n novo">${a.filter(ehNovo).length ? '+' + a.filter(ehNovo).length : ''}</td><td class="n" style="color:var(--rec)">${a.filter(i => pub(i) >= LIM_REC).length}</td><td class="n">${a.length}</td></tr>`; }).join('');
   const prazos = at.filter(i => { const d = diasAte(i.encerramento); return d !== null && d >= 0 && d <= 7; }).sort((a, b) => String(a.encerramento).localeCompare(String(b.encerramento))).slice(0, 8);
   const destaques = at.filter(i => pub(i) >= LIM_REC).sort((a, b) => pub(b).localeCompare(pub(a)));
-  const nomeCat = { principal: 'Saúde', consultoria: 'Consultoria', agro: 'Agro', construcao: 'Construção', grafica: 'Gráficos', extra: 'Extra', cultura: 'Cultura' };
+  const nomeCat = { principal: 'Saúde', consultoria: 'Consultoria', agro: 'Agro', construcao: 'Construção', grafica: 'Gráficos', frete: 'Fretes', extra: 'Extra', cultura: 'Cultura' };
   return `<div class="grade2">
     <section class="bloco"><h3>Editais abertos por data de publicação <small>últimos 30 dias · dourado = novos</small></h3><div class="corpo grafico">${grafico}</div></section>
     <section class="bloco"><h3>Por categoria <small>novos · 30 dias · abertos</small></h3><div class="corpo"><table class="tabcat">${cats}</table></div></section>
@@ -450,7 +511,7 @@ function renderArvore() {
 function renderLista() {
   const p = pagAtual(); const l = filtrados();
   const opts = p.cat === 'principal' ? [['', 'Todas as relevâncias'], ['alta', 'Relevância alta'], ['verificar', 'Verificar (saúde geral)'], ['consorcio', 'Consórcios']]
-    : [['', 'Todas as categorias'], ...Object.entries(SUB).filter(([k]) => k.startsWith({ cultura: 'cult_', consultoria: 'cons_', agro: 'agro_', construcao: 'obra_', grafica: 'graf_', mei: 'mei_', extra: '' }[p.cat] || '') && (p.cat !== 'extra' || !/^(cult|cons|obra|agro|graf|mei)_/.test(k)))];
+    : [['', 'Todas as categorias'], ...Object.entries(SUB).filter(([k]) => k.startsWith({ cultura: 'cult_', consultoria: 'cons_', agro: 'agro_', construcao: 'obra_', grafica: 'graf_', frete: 'frete_', mei: 'mei_', extra: '' }[p.cat] || '') && (p.cat !== 'extra' || !/^(cult|cons|obra|agro|graf|frete|mei)_/.test(k)))];
   const per = [['novos', 'Novos'], ['7', '7 dias'], ['30', '30 dias'], ['todos', 'Todos']];
   let h = `<div class="filtros">
     <input type="search" id="fBusca" placeholder="Buscar por objeto, órgão, cidade ou nº do processo" value="${esc(E.busca)}">
@@ -516,15 +577,110 @@ function renderEditais() {
   return `<table class="ed"><thead><tr><th>Cidade / órgão</th><th>Objeto</th><th>Encerramento</th><th>Baixado em</th><th>Situação</th><th></th></tr></thead><tbody>${v.map(f => `<tr><td><b>${esc(f.cidade)} – ${esc(f.uf)}</b><br><span style="color:var(--ink-3)">${esc(f.orgao)}</span></td><td>${esc(f.objeto)}<br><span style="color:var(--ink-3);font-size:12px">${(f.arquivos || []).length} arquivo(s)</span></td><td>${fData(f.encerramento)}</td><td>${fData(f.baixadoEm)}</td><td>${stEdital(f)}</td><td style="white-space:nowrap">${f.status === 'analisado' && f.relatorio ? `<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(f.id)}" target="_blank">Ver análise</a> ` : ''}<button class="btn" data-abrir="${esc(f.id)}">Pasta</button></td></tr>`).join('')}</tbody></table>`;
 }
 
+/* ---------- agencia de cargas ---------- */
+const opt = (lista, sel, vazio) => (vazio !== undefined ? `<option value="">${vazio}</option>` : '') + lista.map(x => { const [v, t] = Array.isArray(x) ? x : [x, x]; return `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(t)}</option>`; }).join('');
+const campo = (rot, nome, val, extra = '') => `<label>${rot}<input name="${nome}" value="${esc(val ?? '')}" ${extra}></label>`;
+function renderAgencia() {
+  const ed = agEdit || {}; const edN = ed.tipo === 'neg' ? ed.item : null; const edM = ed.tipo === 'mot' ? ed.item : null;
+  const fretesAbertos = daCat('frete').length;
+  const ext = 'target="_blank" rel="noopener"';
+  let h = temServidor ? '' : '<div class="aviso">Abra pelo atalho <b>Painel Credenciamentos</b> para cadastrar motoristas e negociações. Os atalhos do FreteBras funcionam normalmente.</div>';
+
+  // 1) atalhos para a busca do FreteBras
+  h += `<section class="bloco"><h3>Cargas no FreteBras — Janaúba e região <small>abre a busca do FreteBras já filtrada, em outra aba</small></h3><div class="corpo">
+    <div class="ag-dest">
+      <a href="${fbLink('de', 'Janaúba', 'MG', 200)}" ${ext}><b>Saindo de Janaúba · até 200 km</b><span>Cargas que precisam de caminhão na região</span></a>
+      <a href="${fbLink('de', 'Janaúba', 'MG', 50)}" ${ext}><b>Saindo de Janaúba · até 50 km</b><span>Janaúba, Nova Porteirinha, Jaíba, Porteirinha…</span></a>
+      <a href="${fbLink('para', 'Janaúba', 'MG', 200)}" ${ext}><b>Chegando na região · até 200 km</b><span>Caminhões que vão descarregar aqui e precisam de retorno</span></a>
+      <a href="${FB}carga-de-mg" ${ext}><b>Saindo de Minas Gerais</b><span>Todas as cargas com origem em MG</span></a>
+    </div>
+    <div class="ag-cids">${AG_CIDADES.map(([c, uf]) => `<div class="ag-cid"><span>${esc(c)}${uf !== 'MG' ? ' – ' + uf : ''}</span><span class="lk"><a href="${fbLink('de', c, uf, 50)}" ${ext}>Saindo</a><a href="${fbLink('para', c, uf, 50)}" ${ext}>Chegando</a></span></div>`).join('')}</div>
+    <p style="font-size:12.5px;color:var(--ink-3);margin:12px 0 0">Sem login o FreteBras mostra rota, produto, peso, veículo e data de coleta. <b>Preço e contato aparecem para assinante</b> — entre com a conta de agenciador da agência. Os anúncios ficam no FreteBras: este painel não copia nem guarda anúncios de lá (os termos de uso do site proíbem).</p>
+  </div></section>`;
+
+  // 2) como ganhar
+  h += `<div class="grade2" style="margin-top:16px"><section class="bloco"><h3>Onde está o ganho do agenciador</h3><div class="corpo"><ol class="dicas">
+      <li><b>Carga saindo com coleta em até 3 dias:</b> a empresa está com pressa de caminhão. Quem tem motorista de confiança na região fecha primeiro.</li>
+      <li><b>Carga chegando na região:</b> o caminhão vai descarregar aqui e voltar vazio. Ofereça carga de retorno dos embarcadores locais que a agência já atende.</li>
+      <li><b>Mesma empresa anunciando toda semana:</b> é cliente recorrente. Vale virar o agenciador fixo dela na região.</li>
+      <li><b>Regras do FreteBras:</b> a taxa de agenciamento segue o limite da Central do Assinante e o valor repassado ao motorista é o que a empresa ofereceu.</li>
+    </ol></div></section>
+    <section class="bloco" style="align-self:start"><h3>Licitações de frete <small>PNCP</small></h3><div class="corpo">
+      <div style="font-size:30px;font-weight:700">${fretesAbertos}</div>
+      <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:10px">processo(s) aberto(s) de transporte de cargas, fretes e caminhões nas cidades de atuação — atualizado na busca diária</div>
+      <button class="btn prim" data-pag="frete">Ver licitações de frete</button></div></section></div>`;
+
+  // 3) negociacoes
+  const motPorId = Object.fromEntries(AG.motoristas.map(m => [m.id, m]));
+  const negs = [...AG.negocios].sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const motOrd = [...AG.motoristas].sort((a, b) => (a.disponivel === 'nao') - (b.disponivel === 'nao') || String(a.nome).localeCompare(String(b.nome)));
+  h += `<div class="cab-bloco"><h3>Negociações <small>${negs.length ? negs.length + ' registrada(s)' : 'cargas que a agência está fechando'}</small></h3></div>`;
+  if (temServidor) h += `<form class="fm" id="fmNeg">
+      ${campo('Data', 'data', edN ? edN.data : agora().slice(0, 10), 'type="date" required')}
+      ${campo('Origem', 'origem', edN ? edN.origem : 'Janaúba – MG', 'required')}
+      ${campo('Destino', 'destino', edN?.destino, 'required')}
+      ${campo('Produto', 'produto', edN?.produto)}
+      ${campo('Peso (t)', 'peso', edN?.peso, 'inputmode="decimal"')}
+      <label>Veículo<select name="veiculo">${opt(VEICULOS, edN?.veiculo, '—')}</select></label>
+      ${campo('Empresa / embarcador', 'empresa', edN?.empresa)}
+      ${campo('Contato da empresa', 'contato', edN?.contato)}
+      ${campo('Valor do frete (R$)', 'frete', edN?.frete, 'inputmode="decimal"')}
+      ${campo('Taxa de agenciamento (R$)', 'taxa', edN?.taxa, 'inputmode="decimal"')}
+      <label>Motorista<select name="motorista">${opt(motOrd.map(m => [m.id, `${m.nome} · ${m.veiculo || 's/ veículo'}${m.disponivel === 'nao' ? ' (indisponível)' : ''}`]), edN?.motorista, '— a definir —')}</select></label>
+      <label>Situação<select name="status">${opt(ST_NEG, edN ? edN.status : 'prospeccao')}</select></label>
+      <label class="larga">Observações<input name="obs" value="${esc(edN?.obs ?? '')}"></label>
+      <div class="bts"><button class="btn prim" type="submit">${edN ? 'Salvar alterações' : 'Adicionar negociação'}</button>${edN ? '<button class="btn" type="button" data-agcancel="1">Cancelar</button>' : ''}<span class="dica" id="dicaTaxa"></span></div>
+    </form>`;
+  h += negs.length ? `<div class="rolagem"><table class="ed"><thead><tr><th>Data</th><th>Rota</th><th>Carga</th><th>Empresa</th><th>Frete</th><th>Taxa</th><th>Motorista</th><th>Situação</th><th></th></tr></thead><tbody>${negs.map(n => {
+      const m = motPorId[n.motorista]; const f = num(n.frete), t = num(n.taxa);
+      return `<tr><td>${fData(n.data)}</td><td><b>${esc(n.origem)}</b><br>→ ${esc(n.destino)}</td><td>${esc(n.produto || '—')}<br><span class="sm">${[n.peso ? esc(n.peso) + ' t' : '', esc(n.veiculo || '')].filter(Boolean).join(' · ')}</span></td>
+        <td>${esc(n.empresa || '—')}${n.contato ? `<br><span class="sm">${esc(n.contato)}</span>` : ''}</td><td class="num">${f ? brl(f) : '—'}</td><td class="num">${t ? `<b>${brl(t)}</b>${f ? `<br><span class="sm">${(t / f * 100).toFixed(1).replace('.', ',')}%</span>` : ''}` : '—'}</td>
+        <td>${m ? esc(m.nome) + (zap(m.telefone) ? ` <a href="${zap(m.telefone)}" target="_blank" rel="noopener" title="WhatsApp">↗</a>` : '') : '<span class="sm">a definir</span>'}</td>
+        <td>${temServidor ? `<select class="acomp ${['fechado', 'entregue'].includes(n.status) ? 'on' : ''}" data-negst="${esc(n.id)}">${opt(ST_NEG, n.status)}</select>` : esc((ST_NEG.find(s => s[0] === n.status) || ['', ''])[1])}</td>
+        <td style="white-space:nowrap">${temServidor ? `<button class="btn peq" data-aged="neg:${esc(n.id)}">Editar</button> <button class="btn peq" data-agdel="neg:${esc(n.id)}">Excluir</button>` : ''}</td></tr>${n.obs ? `<tr><td></td><td colspan="8" class="sm" style="padding-top:0;border-top:0">${esc(n.obs)}</td></tr>` : ''}`;
+    }).join('')}</tbody></table></div>` : '<div class="vazio">Nenhuma negociação registrada. Ao pegar uma carga no FreteBras, anote aqui a rota, o frete e a taxa para acompanhar o ganho do mês.</div>';
+
+  // 4) motoristas parceiros
+  h += `<div class="cab-bloco"><h3>Motoristas parceiros <small>${AG.motoristas.length ? AG.motoristas.length + ' na carteira' : 'a carteira da agência'}</small></h3></div>`;
+  if (temServidor) h += `<form class="fm" id="fmMot">
+      ${campo('Nome', 'nome', edM?.nome, 'required')}
+      ${campo('Telefone / WhatsApp', 'telefone', edM?.telefone, 'inputmode="tel"')}
+      <label>Veículo<select name="veiculo">${opt(VEICULOS, edM?.veiculo, '—')}</select></label>
+      <label>Carroceria<select name="carroceria">${opt(CARROCERIAS, edM?.carroceria, '—')}</select></label>
+      ${campo('Placa', 'placa', edM?.placa)}
+      ${campo('Cidade base', 'cidade', edM ? edM.cidade : 'Janaúba')}
+      ${campo('Rotas que prefere', 'rotas', edM?.rotas, 'placeholder="ex.: SP, BH, Nordeste"')}
+      <label>Disponível<select name="disponivel">${opt([['sim', 'Sim'], ['nao', 'Não']], edM ? edM.disponivel : 'sim')}</select></label>
+      <label class="larga">Observações<input name="obs" value="${esc(edM?.obs ?? '')}"></label>
+      <div class="bts"><button class="btn prim" type="submit">${edM ? 'Salvar alterações' : 'Adicionar motorista'}</button>${edM ? '<button class="btn" type="button" data-agcancel="1">Cancelar</button>' : ''}</div>
+    </form>`;
+  h += motOrd.length ? `<div class="rolagem"><table class="ed"><thead><tr><th>Motorista</th><th>Veículo</th><th>Base / rotas</th><th>Disponível</th><th>Cargas feitas</th><th></th></tr></thead><tbody>${motOrd.map(m => {
+      const feitas = AG.negocios.filter(n => n.motorista === m.id && ['fechado', 'entregue'].includes(n.status)).length;
+      return `<tr><td><b>${esc(m.nome)}</b>${m.telefone ? `<br>${zap(m.telefone) ? `<a href="${zap(m.telefone)}" target="_blank" rel="noopener">${esc(m.telefone)}</a>` : esc(m.telefone)}` : ''}${m.obs ? `<br><span class="sm">${esc(m.obs)}</span>` : ''}</td>
+        <td>${esc(m.veiculo || '—')}<br><span class="sm">${[esc(m.carroceria || ''), esc(m.placa || '')].filter(Boolean).join(' · ')}</span></td><td>${esc(m.cidade || '—')}${m.rotas ? `<br><span class="sm">${esc(m.rotas)}</span>` : ''}</td>
+        <td>${temServidor ? `<button class="btn peq" data-agdisp="${esc(m.id)}" title="Clique para alternar"><span class="disp ${m.disponivel === 'nao' ? 'nao' : 'sim'}">${m.disponivel === 'nao' ? 'Não' : 'Sim'}</span></button>` : `<span class="disp ${m.disponivel === 'nao' ? 'nao' : 'sim'}">${m.disponivel === 'nao' ? 'Não' : 'Sim'}</span>`}</td><td class="num">${feitas || '—'}</td>
+        <td style="white-space:nowrap">${temServidor ? `<button class="btn peq" data-aged="mot:${esc(m.id)}">Editar</button> <button class="btn peq" data-agdel="mot:${esc(m.id)}">Excluir</button>` : ''}</td></tr>`;
+    }).join('')}</tbody></table></div>` : '<div class="vazio">Nenhum motorista cadastrado. Cadastre os motoristas de confiança da agência com veículo e carroceria — é a carteira que nenhum site tem.</div>';
+  return h;
+}
+async function salvarAgencia() {
+  try {
+    // text/plain: evita a consulta previa (preflight) do navegador quando o painel roda fora do localhost
+    const r = await fetch(API + '/api/agencia', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(AG) });
+    if (!r.ok) throw new Error((await r.json()).erro || 'falha');
+    return true;
+  } catch (err) { alert('Não foi possível salvar: ' + err.message + '. Recarregue a página e tente de novo.'); return false; }
+}
+
 function render() {
   try { localStorage.setItem('bgcRadar', JSON.stringify({ pag: E.pag, ordem: E.ordem })); } catch (e) {}
   renderNav(); renderTopo(); renderKpis();
   const foco = document.activeElement && document.activeElement.id;
   const p = pagAtual();
-  $('#corpo').innerHTML = p.id === 'geral' ? renderGeral() : p.id === 'acomp' ? renderAcomp() : p.id === 'editais' ? renderEditais() : `<div class="layout">${renderArvore()}${renderLista()}</div>`;
+  $('#corpo').innerHTML = p.id === 'geral' ? renderGeral() : p.id === 'acomp' ? renderAcomp() : p.id === 'editais' ? renderEditais() : p.id === 'agencia' ? renderAgencia() : `<div class="layout">${renderArvore()}${renderLista()}</div>`;
   if (foco === 'fBusca') { const el = $('#fBusca'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
 }
-function irPara(pag) { E.pag = pag; E.regiao = null; E.cidade = null; E.orgao = null; E.tipo = ''; E.busca = ''; E.periodo = 'todos'; E.limite = 50; window.scrollTo(0, 0); render(); }
+function irPara(pag) { agEdit = null; E.pag = pag; E.regiao = null; E.cidade = null; E.orgao = null; E.tipo = ''; E.busca = ''; E.periodo = 'todos'; E.limite = 50; window.scrollTo(0, 0); render(); }
 
 function exportar() {
   const l = filtrados();
@@ -573,13 +729,60 @@ document.addEventListener('click', async e => {
     return;
   }
   if (t.dataset.abrir) { fetch(API + '/api/abrir?id=' + encodeURIComponent(t.dataset.abrir), { method: 'POST' }); return; }
+  // agencia de cargas
+  if (t.dataset.agcancel) { agEdit = null; return render(); }
+  if (t.dataset.aged) {
+    const [tipo, id] = t.dataset.aged.split(':'); const item = (tipo === 'neg' ? AG.negocios : AG.motoristas).find(x => x.id === id);
+    if (item) { agEdit = { tipo, item }; render(); const f = $(tipo === 'neg' ? '#fmNeg' : '#fmMot'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    return;
+  }
+  if (t.dataset.agdel) {
+    const [tipo, id] = t.dataset.agdel.split(':'); const lista = tipo === 'neg' ? AG.negocios : AG.motoristas; const item = lista.find(x => x.id === id);
+    if (!item || !confirm(tipo === 'neg' ? `Excluir a negociação ${item.origem} → ${item.destino}?` : `Excluir o motorista ${item.nome}?`)) return;
+    const antes = JSON.stringify(AG);
+    if (tipo === 'neg') AG.negocios = AG.negocios.filter(x => x.id !== id); else AG.motoristas = AG.motoristas.filter(x => x.id !== id);
+    if (!(await salvarAgencia())) AG = JSON.parse(antes);
+    agEdit = null; return render();
+  }
+  if (t.dataset.agdisp) {
+    const m = AG.motoristas.find(x => x.id === t.dataset.agdisp); if (!m) return;
+    const ant = m.disponivel; m.disponivel = m.disponivel === 'nao' ? 'sim' : 'nao';
+    if (!(await salvarAgencia())) m.disponivel = ant;
+    return render();
+  }
 });
-document.addEventListener('input', e => { if (e.target.id === 'fBusca') { E.busca = e.target.value; E.limite = 50; render(); } });
+document.addEventListener('submit', async e => {
+  const f = e.target; if (f.id !== 'fmNeg' && f.id !== 'fmMot') return;
+  e.preventDefault();
+  if (!agCarregado) { alert('Os dados da agência ainda não foram carregados. Recarregue a página.'); return; }
+  const d = Object.fromEntries([...new FormData(f).entries()].map(([k, v]) => [k, String(v).trim()]));
+  const tipo = f.id === 'fmNeg' ? 'neg' : 'mot'; const lista = tipo === 'neg' ? AG.negocios : AG.motoristas;
+  const antes = JSON.stringify(AG);
+  if (agEdit && agEdit.tipo === tipo) Object.assign(agEdit.item, d);
+  else lista.push({ id: novoId(), criadoEm: agora(), ...d });
+  if (!(await salvarAgencia())) { AG = JSON.parse(antes); agEdit = null; }
+  agEdit = null; render();
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'fBusca') { E.busca = e.target.value; E.limite = 50; render(); }
+  // negociacao: mostra quanto a taxa representa do frete enquanto digita
+  const f = e.target.form;
+  if (f && f.id === 'fmNeg' && ['frete', 'taxa'].includes(e.target.name)) {
+    const fr = num(f.frete.value), tx = num(f.taxa.value);
+    $('#dicaTaxa').textContent = fr && tx ? `Taxa = ${(tx / fr * 100).toFixed(1).replace('.', ',')}% do frete · motorista recebe ${brl(fr - tx)}` : '';
+  }
+});
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.dataset.marcar) {
     const id = t.dataset.marcar, etapa = t.value;
     try { const r = await fetch(`${API}/api/marcar?id=${encodeURIComponent(id)}&etapa=${encodeURIComponent(etapa)}`, { method: 'POST' }).then(r => r.json()); marc = r.marcacoes || marc; } catch (err) { alert('Não foi possível salvar o acompanhamento.'); }
+    return render();
+  }
+  if (t.dataset.negst) {
+    const n = AG.negocios.find(x => x.id === t.dataset.negst); if (!n) return;
+    const ant = n.status; n.status = t.value;
+    if (!(await salvarAgencia())) n.status = ant;
     return render();
   }
   if (t.id === 'fTipo') E.tipo = t.value; else if (t.id === 'fOrdem') E.ordem = t.value; else if (t.id === 'fEnc') E.encerrados = t.checked; else return;
@@ -598,11 +801,17 @@ async function carregar() {
   if (!temServidor) return;
   try { const v = await fetch(API + '/api/fila').then(r => r.json()); fila = Object.fromEntries((v || []).map(f => [f.id, f])); } catch (e) {}
   try { marc = await fetch(API + '/api/marcacoes').then(r => r.json()) || {}; } catch (e) {}
+  // agencia: so troca os dados da tela quando nao ha formulario em edicao (evita perder o que esta sendo digitado)
+  try {
+    const r = await fetch(API + '/api/agencia', { cache: 'no-store' });
+    if (r.ok) { const a = await r.json(); if (a && Array.isArray(a.motoristas) && Array.isArray(a.negocios) && !agEdit) { AG = a; agCarregado = true; } }
+  } catch (e) {}
 }
 render();
 carregar().then(render);
 verificarServidor(); setInterval(verificarServidor, 5000);
-setInterval(() => temServidor && carregar().then(() => { if (!document.activeElement || !['fBusca'].includes(document.activeElement.id)) render(); }), 60000);
+// na aba da agencia a tela nao se redesenha sozinha: redesenhar apagaria um formulario pela metade
+setInterval(() => temServidor && E.pag !== 'agencia' && carregar().then(() => { if (!document.activeElement || !['fBusca'].includes(document.activeElement.id)) render(); }), 60000);
 </script>
 </body>
 </html>
