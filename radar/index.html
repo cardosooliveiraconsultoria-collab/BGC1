@@ -417,7 +417,7 @@ function renderKpis() {
   const p = pagAtual();
   if (p.id === 'editais') {
     const v = Object.values(fila);
-    $('#kpis').innerHTML = kpi('Editais baixados', v.length, 'pelo painel') + kpi('Analisados antes', v.filter(f => f.status === 'analisado').length, 'relatório na pasta', 'novo');
+    $('#kpis').innerHTML = kpi('Editais baixados', v.length, 'pelo painel') + kpi('Análise solicitada', v.filter(f => ['aguardando_analise', 'em_analise'].includes(f.status)).length, 'na fila do agente', 'rec') + kpi('Analisados', v.filter(f => f.relatorio).length, 'relatório na pasta', 'novo');
     return;
   }
   if (p.id === 'agencia') {
@@ -536,8 +536,18 @@ function renderLista() {
 
 function stEdital(f) {
   if (!f) return '';
+  if (f.status === 'aguardando_analise') return '<span class="st aguard">⏳ Análise solicitada</span>';
+  if (f.status === 'em_analise') return '<span class="st aguard">⏳ Em análise</span>';
+  if (f.status === 'erro') return `<span class="st erro">Análise falhou${f.erro ? ': ' + esc(f.erro) : ''}</span>`;
   if (f.status === 'analisado') return `<span class="st ok">✓ Analisado${f.recomendacao ? ' · ' + esc(f.recomendacao) : ''}</span>`;
   return '<span class="st ok">✓ Baixado</span>';
+}
+// botoes de analise: pedir (baixa antes se precisar), cancelar o pedido ou pedir de novo
+function btAnalise(id, f) {
+  if (f && f.status === 'aguardando_analise') return `<button class="btn" data-cancelar="${esc(id)}" title="Retirar da fila de análise">Cancelar análise</button>`;
+  if (f && f.status === 'em_analise') return '';
+  if (f && f.status === 'analisado') return `<button class="btn" data-analisar="${esc(id)}" title="Pedir uma nova análise deste edital">Analisar de novo</button>`;
+  return `<button class="btn ouro" data-analisar="${esc(id)}" title="${f ? 'Coloca o edital na fila de análise' : 'Baixa o edital e coloca na fila de análise'}">Analisar</button>`;
 }
 function card(i, rotCat) {
   const d = diasAte(i.encerramento);
@@ -547,8 +557,8 @@ function card(i, rotCat) {
   const fora = /^(MAPA|WEB|DOU|AMM|FGM|AGM)-/.test(i.id);
   const ac = [];
   if (fora) ac.push(`<a class="btn prim" href="${esc(i.linkPNCP)}" target="_blank" rel="noopener">Abrir edital</a>`);
-  else if (f) { ac.push(`<button class="btn" data-abrir="${esc(i.id)}">Abrir pasta</button>`); if (f.status === 'analisado' && f.relatorio) ac.push(`<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(i.id)}" target="_blank">Ver análise</a>`); ac.push(stEdital(f)); }
-  else ac.push(`<button class="btn prim" data-baixar="${esc(i.id)}">Baixar edital</button>`);
+  else if (f) { ac.push(`<button class="btn" data-abrir="${esc(i.id)}">Abrir pasta</button>`); if (f.relatorio) ac.push(`<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(i.id)}" target="_blank">Ver análise</a>`); if (temServidor) ac.push(btAnalise(i.id, f)); ac.push(stEdital(f)); }
+  else { ac.push(`<button class="btn prim" data-baixar="${esc(i.id)}">Baixar edital</button>`); if (temServidor) ac.push(btAnalise(i.id, null)); }
   if (!fora) ac.push(`<a class="btn" href="${esc(i.linkPNCP)}" target="_blank" rel="noopener">PNCP</a>`);
   if (i.linkOrigem) ac.push(`<a class="btn" href="${esc(i.linkOrigem)}" target="_blank" rel="noopener">Sistema de origem</a>`);
   if (temServidor) ac.push(`<select class="acomp ${m && m.etapa ? 'on' : ''}" data-marcar="${esc(i.id)}">${ETAPAS.map(([k, n]) => `<option value="${k}" ${(m && m.etapa || '') === k ? 'selected' : ''}>${n}</option>`).join('')}</select>`);
@@ -574,7 +584,8 @@ function renderAcomp() {
 function renderEditais() {
   const v = Object.values(fila).sort((a, b) => String(b.baixadoEm).localeCompare(String(a.baixadoEm)));
   if (!v.length) return '<div class="vazio">Nenhum edital baixado ainda. Use <b>Baixar edital</b> em um processo.</div>';
-  return `<table class="ed"><thead><tr><th>Cidade / órgão</th><th>Objeto</th><th>Encerramento</th><th>Baixado em</th><th>Situação</th><th></th></tr></thead><tbody>${v.map(f => `<tr><td><b>${esc(f.cidade)} – ${esc(f.uf)}</b><br><span style="color:var(--ink-3)">${esc(f.orgao)}</span></td><td>${esc(f.objeto)}<br><span style="color:var(--ink-3);font-size:12px">${(f.arquivos || []).length} arquivo(s)</span></td><td>${fData(f.encerramento)}</td><td>${fData(f.baixadoEm)}</td><td>${stEdital(f)}</td><td style="white-space:nowrap">${f.status === 'analisado' && f.relatorio ? `<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(f.id)}" target="_blank">Ver análise</a> ` : ''}<button class="btn" data-abrir="${esc(f.id)}">Pasta</button></td></tr>`).join('')}</tbody></table>`;
+  return `<table class="ed"><thead><tr><th>Cidade / órgão</th><th>Objeto</th><th>Encerramento</th><th>Baixado em</th><th>Situação</th><th></th></tr></thead><tbody>${v.map(f => `<tr><td><b>${esc(f.cidade)} – ${esc(f.uf)}</b><br><span style="color:var(--ink-3)">${esc(f.orgao)}</span></td><td>${esc(f.objeto)}<br><span style="color:var(--ink-3);font-size:12px">${(f.arquivos || []).length} arquivo(s)</span></td><td>${fData(f.encerramento)}</td><td>${fData(f.baixadoEm)}</td><td>${stEdital(f)}</td><td style="white-space:nowrap" data-acoes="${esc(f.id)}">${f.relatorio ? `<a class="btn ouro" href="${API}/relatorio?id=${encodeURIComponent(f.id)}" target="_blank">Ver análise</a> ` : ''}${temServidor ? btAnalise(f.id, f) + ' ' : ''}<button class="btn" data-abrir="${esc(f.id)}">Pasta</button></td></tr>`).join('')}</tbody></table>
+  <p style="color:var(--ink-3);font-size:12.5px;margin-top:14px">Baixar um edital não pede análise. Clique em <b>Analisar</b> nos editais que quiser analisados; o agente de análise processa os pedidos na próxima execução agendada.</p>`;
 }
 
 /* ---------- agencia de cargas ---------- */
@@ -725,6 +736,21 @@ document.addEventListener('click', async e => {
     } catch (err) {
       t.disabled = false; t.textContent = 'Baixar edital';
       document.querySelector(`[data-acoes="${CSS.escape(id)}"]`).insertAdjacentHTML('beforeend', `<span class="st erro">${esc(err.message)}</span>`);
+    }
+    return;
+  }
+  if (t.dataset.analisar || t.dataset.cancelar) {
+    const id = t.dataset.analisar || t.dataset.cancelar, pedir = !!t.dataset.analisar;
+    const rot = t.textContent;
+    t.disabled = true; t.textContent = pedir ? (fila[id] ? 'Enviando…' : 'Baixando e enviando…') : 'Cancelando…';
+    try {
+      const r = await fetch(API + (pedir ? '/api/analisar?id=' : '/api/cancelar-analise?id=') + encodeURIComponent(id), { method: 'POST' }); const j = await r.json();
+      if (!r.ok) throw new Error(j.erro || 'Falha');
+      fila[id] = j; render();
+    } catch (err) {
+      t.disabled = false; t.textContent = rot;
+      const box = document.querySelector(`[data-acoes="${CSS.escape(id)}"]`);
+      if (box) box.insertAdjacentHTML('beforeend', `<span class="st erro">${esc(err.message)}</span>`);
     }
     return;
   }
